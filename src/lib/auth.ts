@@ -20,7 +20,6 @@ export const auth = betterAuth({
     provider: "sqlite",
     schema: authSchema,
   }),
-  baseURL: process.env.BETTER_AUTH_URL,
   plugins: [admin(), nextCookies()],
   socialProviders: {
     google: {
