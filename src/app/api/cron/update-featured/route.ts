@@ -37,8 +37,7 @@ async function upsertGame(raw: IGDBRaw) {
   const releaseDate = raw.first_release_date
     ? new Date(raw.first_release_date * 1000).toISOString().split("T")[0]
     : null;
-  const popularity =
-    (raw.total_rating_count ?? 0) + (raw.hypes ?? 0) * 10;
+  const popularity = (raw.total_rating_count ?? 0) + (raw.hypes ?? 0) * 10;
 
   if (existing) {
     await db
@@ -102,12 +101,10 @@ export async function GET(req: NextRequest) {
       headers,
       body: `fields ${FIELDS};\nwhere first_release_date > ${ninetyDaysAgo} & first_release_date < ${now} & cover != null & total_rating_count > 0;\nsort total_rating_count desc;\nlimit 5;`,
     });
-    const recentGames: IGDBRaw[] = recentRes.ok
-      ? await recentRes.json()
-      : [];
+    const recentGames: IGDBRaw[] = recentRes.ok ? await recentRes.json() : [];
 
-    await db.execute(
-      sql`UPDATE game SET is_featured_anticipated = 0, is_featured_released = 0`,
+    await db.run(
+      sql`UPDATE game SET is_featured_anticipated = 0, is_featured_released = 0`
     );
 
     let anticipatedCount = 0;
@@ -139,7 +136,7 @@ export async function GET(req: NextRequest) {
     console.error("[cron] update-featured failed:", e);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

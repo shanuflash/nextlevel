@@ -81,9 +81,7 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-bold">
             Welcome back, {session.user.name}
           </h1>
-          <p className="text-white/40 text-sm mt-1">
-            Your catalog overview.
-          </p>
+          <p className="text-white/40 text-sm mt-1">Your catalog overview.</p>
         </div>
         {username && <ProfileUrlCopy username={username} />}
       </div>
@@ -110,9 +108,7 @@ export default async function DashboardPage() {
               <div className={`text-2xl font-bold ${cat.color}`}>
                 {categoryMap[cat.id] || 0}
               </div>
-              <div className="text-xs text-white/40 mt-1">
-                {cat.label}
-              </div>
+              <div className="text-xs text-white/40 mt-1">{cat.label}</div>
               <div
                 className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r ${bars[cat.id]}`}
               />
@@ -220,46 +216,6 @@ export default async function DashboardPage() {
               );
             })}
           </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link
-          href="/dashboard/games"
-          className="bg-white/3 rounded-2xl border border-white/8 p-6 hover:bg-white/5 transition-colors group"
-        >
-          <div className="text-lg font-semibold group-hover:text-primary transition-colors">
-            Manage Games
-          </div>
-          <p className="text-white/40 text-sm mt-1">
-            Add, edit, or remove games from your catalog.
-          </p>
-        </Link>
-        <Link
-          href="/dashboard/settings"
-          className="bg-white/3 rounded-2xl border border-white/8 p-6 hover:bg-white/5 transition-colors group"
-        >
-          <div className="text-lg font-semibold group-hover:text-primary transition-colors">
-            Profile Settings
-          </div>
-          <p className="text-white/40 text-sm mt-1">
-            Edit your username, bio, and profile details.
-          </p>
-        </Link>
-      </div>
-
-      {totalGames === 0 && (
-        <div className="text-center py-16 bg-white/3 rounded-2xl border border-white/8">
-          <h2 className="text-lg font-semibold">No games yet</h2>
-          <p className="text-white/40 text-sm mt-1 mb-6">
-            Start building your catalog by adding your first game.
-          </p>
-          <Link
-            href="/dashboard/games"
-            className="inline-flex px-5 py-2.5 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
-          >
-            Add Your First Game
-          </Link>
         </div>
       )}
     </div>
