@@ -44,7 +44,8 @@ export const userGame = sqliteTable(
       .references(() => user.id, { onDelete: "cascade" }),
     gameId: text("game_id")
       .notNull()
-      .references(() => game.id, { onDelete: "cascade" }),
+      .references(() => game.id),
+    igdbId: integer("igdb_id"), // redundant copy for disaster recovery
     category: text("category", {
       enum: ["finished", "playing", "want-to-play", "on-hold", "dropped"],
     }).notNull(),

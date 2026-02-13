@@ -52,6 +52,7 @@ export interface IGDBGameMeta {
   platforms: string[];
   releaseDate: string | null;
   summary: string | null;
+  popularity: number;
 }
 
 interface IGDBRawGame {
@@ -63,6 +64,8 @@ interface IGDBRawGame {
   platforms?: { abbreviation?: string }[];
   first_release_date?: number;
   summary?: string;
+  total_rating_count?: number;
+  hypes?: number;
 }
 
 function mapRawGame(g: IGDBRawGame): IGDBGameMeta {
@@ -80,6 +83,7 @@ function mapRawGame(g: IGDBRawGame): IGDBGameMeta {
       ? new Date(g.first_release_date * 1000).toISOString().split("T")[0]
       : null,
     summary: g.summary ?? null,
+    popularity: (g.total_rating_count ?? 0) + (g.hypes ?? 0) * 10,
   };
 }
 
@@ -108,7 +112,7 @@ export async function fetchIGDBGames(
           Authorization: `Bearer ${token}`,
           "Content-Type": "text/plain",
         },
-        body: `fields name, slug, cover.image_id, genres.name, platforms.abbreviation, first_release_date, summary;
+        body: `fields name, slug, cover.image_id, genres.name, platforms.abbreviation, first_release_date, summary, total_rating_count, hypes;
 where id = (${ids});
 limit 500;`,
       });

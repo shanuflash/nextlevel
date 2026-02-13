@@ -43,6 +43,7 @@ export async function addGame(input: AddGameInput) {
       platforms: meta.platforms.join(", ") || null,
       releaseDate: meta.releaseDate,
       summary: meta.summary,
+      popularity: meta.popularity,
     });
     existingGame = {
       id: gameId,
@@ -54,13 +55,16 @@ export async function addGame(input: AddGameInput) {
       platforms: meta.platforms.join(", ") || null,
       releaseDate: meta.releaseDate,
       summary: meta.summary,
+      popularity: meta.popularity,
+      isFeaturedAnticipated: false,
+      isFeaturedReleased: false,
     };
   }
 
   const existingUserGame = await db.query.userGame.findFirst({
     where: and(
       eq(userGame.userId, session.user.id),
-      eq(userGame.gameId, existingGame.id),
+      eq(userGame.gameId, existingGame!.id),
     ),
   });
 
@@ -69,7 +73,8 @@ export async function addGame(input: AddGameInput) {
   await db.insert(userGame).values({
     id: generateId(),
     userId: session.user.id,
-    gameId: existingGame.id,
+    gameId: existingGame!.id,
+    igdbId,
     category: category as GameCategory,
     rating: rating ?? null,
   });
@@ -117,6 +122,7 @@ export async function bulkAddGames(items: BulkAddItem[]) {
         platforms: meta.platforms.join(", ") || null,
         releaseDate: meta.releaseDate,
         summary: meta.summary,
+        popularity: meta.popularity,
       });
       existingMap.set(igdbId, {
         id: gameId,
@@ -128,6 +134,9 @@ export async function bulkAddGames(items: BulkAddItem[]) {
         platforms: meta.platforms.join(", ") || null,
         releaseDate: meta.releaseDate,
         summary: meta.summary,
+        popularity: meta.popularity,
+        isFeaturedAnticipated: false,
+        isFeaturedReleased: false,
       });
     }),
   );
@@ -161,6 +170,7 @@ export async function bulkAddGames(items: BulkAddItem[]) {
           id: generateId(),
           userId: session.user.id,
           gameId: dbGame.id,
+          igdbId: item.igdbId,
           category: item.category as GameCategory,
           rating: item.rating ?? null,
         });

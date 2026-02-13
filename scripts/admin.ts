@@ -12,6 +12,7 @@
  *   update-popularity   Update popularity scores for all games from IGDB
  *   update-featured     Refresh Most Anticipated & Recently Released flags from IGDB
  *   find-orphans        Find user_game rows with missing game references
+ *   recover-games       Restore missing game rows from a Turso point-in-time fork
  *   backup              Fork the database to a timestamped backup (requires TURSO_API_TOKEN)
  */
 
@@ -239,14 +240,158 @@ async function findOrphans() {
   console.log(
     "\nThese rows reference games that no longer exist in the game table.",
   );
-  console.log("To clean them up, run: npx tsx scripts/admin.ts clean-orphans");
+  console.log("To recover them, run: npx tsx scripts/admin.ts recover-games");
 }
 
-async function cleanOrphans() {
-  const result = await client.execute(
-    "DELETE FROM user_game WHERE game_id NOT IN (SELECT id FROM game)",
+async function recoverGames() {
+  const apiToken = process.env.TURSO_API_TOKEN;
+  if (!apiToken) {
+    console.log("TURSO_API_TOKEN not set in .env");
+    return;
+  }
+
+  // Check how many orphans we have
+  const orphans = await client.execute(
+    "SELECT count(*) as cnt FROM user_game WHERE game_id NOT IN (SELECT id FROM game)",
   );
-  console.log(`Deleted ${result.rowsAffected} orphaned user_game rows`);
+  const orphanCount = orphans.rows[0].cnt as number;
+  if (orphanCount === 0) {
+    console.log("No orphaned user_game rows. Nothing to recover.");
+    return;
+  }
+  console.log(`Found ${orphanCount} orphaned user_game rows. Starting recovery...\n`);
+
+  const orgSlug = "vercel-icfg-e4h5duucdh387sxitndsqgyr";
+  const forkName = `nl-recover-${Date.now().toString(36)}`;
+
+  // Fork to 2 hours ago (before the wipe)
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  console.log(`Forking database to ${twoHoursAgo}...`);
+
+  const forkRes = await fetch(
+    `https://api.turso.tech/v1/organizations/${orgSlug}/databases`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: forkName,
+        group: "icfg-e4h5duucdh387sxitndsqgyr-aws-ap-south-1",
+        seed: {
+          type: "database",
+          name: "nextlevel",
+          timestamp: twoHoursAgo,
+        },
+      }),
+    },
+  );
+
+  if (!forkRes.ok) {
+    console.log("Fork failed:", forkRes.status, await forkRes.text());
+    return;
+  }
+
+  const forkData = await forkRes.json();
+  const forkHostname = forkData.database?.Hostname;
+  if (!forkHostname) {
+    console.log("Fork created but no hostname returned:", forkData);
+    return;
+  }
+  console.log(`Fork created: ${forkHostname}\n`);
+
+  // Wait for fork to be ready
+  console.log("Waiting for fork to be ready...");
+  await new Promise((r) => setTimeout(r, 5000));
+
+  // Create a token for the fork
+  const tokenRes = await fetch(
+    `https://api.turso.tech/v1/organizations/${orgSlug}/databases/${forkName}/auth/tokens`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiToken}` },
+    },
+  );
+
+  if (!tokenRes.ok) {
+    console.log("Token creation failed:", tokenRes.status, await tokenRes.text());
+    return;
+  }
+
+  const tokenData = await tokenRes.json();
+  const forkToken = tokenData.jwt;
+
+  const forkClient = createClient({
+    url: `libsql://${forkHostname}`,
+    authToken: forkToken,
+  });
+
+  // Read old game rows from fork
+  const oldGames = await forkClient.execute("SELECT * FROM game");
+  console.log(`Found ${oldGames.rows.length} games in backup\n`);
+
+  if (oldGames.rows.length === 0) {
+    console.log("No games in backup. The fork might be from after the wipe.");
+    console.log("Try increasing the time offset.");
+    // Clean up fork
+    await fetch(
+      `https://api.turso.tech/v1/organizations/${orgSlug}/databases/${forkName}`,
+      { method: "DELETE", headers: { Authorization: `Bearer ${apiToken}` } },
+    );
+    return;
+  }
+
+  // Get existing game IDs in live DB to avoid duplicates
+  const existing = await client.execute("SELECT id FROM game");
+  const existingIds = new Set(existing.rows.map((r) => r.id as string));
+
+  let restored = 0;
+  let skipped = 0;
+
+  for (const row of oldGames.rows) {
+    if (existingIds.has(row.id as string)) {
+      skipped++;
+      continue;
+    }
+
+    await client.execute({
+      sql: `INSERT INTO game (id, igdb_id, title, slug, cover_image_id, genres, platforms, release_date, summary, popularity, is_featured_anticipated, is_featured_released)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        row.id,
+        row.igdb_id,
+        row.title,
+        row.slug,
+        row.cover_image_id ?? null,
+        row.genres ?? null,
+        row.platforms ?? null,
+        row.release_date ?? null,
+        row.summary ?? null,
+        row.popularity ?? 0,
+        0, // is_featured_anticipated (will be set by cron)
+        0, // is_featured_released (will be set by cron)
+      ],
+    });
+    console.log(`  Restored: ${row.title}`);
+    restored++;
+  }
+
+  // Check orphans after recovery
+  const remainingOrphans = await client.execute(
+    "SELECT count(*) as cnt FROM user_game WHERE game_id NOT IN (SELECT id FROM game)",
+  );
+
+  console.log(`\nDone! Restored ${restored} games, skipped ${skipped} (already existed)`);
+  console.log(`Remaining orphaned user_game rows: ${remainingOrphans.rows[0].cnt}`);
+
+  // Delete the fork
+  console.log("\nCleaning up fork...");
+  await fetch(
+    `https://api.turso.tech/v1/organizations/${orgSlug}/databases/${forkName}`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${apiToken}` } },
+  );
+  console.log("Fork deleted.");
 }
 
 async function backup() {
@@ -418,7 +563,7 @@ const COMMANDS: Record<string, () => Promise<void>> = {
   "update-popularity": updatePopularity,
   "update-featured": updateFeatured,
   "find-orphans": findOrphans,
-  "clean-orphans": cleanOrphans,
+  "recover-games": recoverGames,
   backup,
 };
 
@@ -432,7 +577,7 @@ if (!command || !COMMANDS[command]) {
   console.log("  update-popularity  Update popularity scores only");
   console.log("  update-featured    Refresh Most Anticipated & Recently Released flags");
   console.log("  find-orphans       Find user_game rows with missing game references");
-  console.log("  clean-orphans      Delete orphaned user_game rows");
+  console.log("  recover-games     Restore missing game rows from a Turso point-in-time fork");
   console.log("  backup             Fork database to a timestamped backup");
   process.exit(0);
 }
