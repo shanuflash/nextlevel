@@ -39,23 +39,36 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-white/3 rounded-2xl border border-white/8 p-5">
-          <div className="text-2xl font-bold text-purple-400">{totalGames}</div>
+        <div className="relative bg-white/3 rounded-2xl border border-white/8 p-5 overflow-hidden">
+          <div className="text-2xl font-bold text-primary">{totalGames}</div>
           <div className="text-xs text-white/40 mt-1">Total Games</div>
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-primary to-primary/80" />
         </div>
-        {CATEGORIES.map((cat) => (
-          <div
-            key={cat.id}
-            className="bg-white/3 rounded-2xl border border-white/8 p-5"
-          >
-            <div className={`text-2xl font-bold ${cat.color}`}>
-              {categoryMap[cat.id] || 0}
+        {CATEGORIES.map((cat) => {
+          const bars: Record<string, string> = {
+            finished: "from-emerald-500 to-emerald-400",
+            playing: "from-blue-500 to-blue-400",
+            "want-to-play": "from-amber-500 to-amber-400",
+            "on-hold": "from-orange-500 to-orange-400",
+            dropped: "from-red-500 to-red-400",
+          };
+          return (
+            <div
+              key={cat.id}
+              className="relative bg-white/3 rounded-2xl border border-white/8 p-5 overflow-hidden"
+            >
+              <div className={`text-2xl font-bold ${cat.color}`}>
+                {categoryMap[cat.id] || 0}
+              </div>
+              <div className="text-xs text-white/40 mt-1">
+                {cat.emoji} {cat.label}
+              </div>
+              <div
+                className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r ${bars[cat.id]}`}
+              />
             </div>
-            <div className="text-xs text-white/40 mt-1">
-              {cat.emoji} {cat.label}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -63,7 +76,7 @@ export default async function DashboardPage() {
           href="/dashboard/games"
           className="bg-white/3 rounded-2xl border border-white/8 p-6 hover:bg-white/5 transition-colors group"
         >
-          <div className="text-lg font-semibold group-hover:text-purple-400 transition-colors">
+          <div className="text-lg font-semibold group-hover:text-primary transition-colors">
             Manage Games
           </div>
           <p className="text-white/40 text-sm mt-1">
@@ -74,7 +87,7 @@ export default async function DashboardPage() {
           href="/dashboard/settings"
           className="bg-white/3 rounded-2xl border border-white/8 p-6 hover:bg-white/5 transition-colors group"
         >
-          <div className="text-lg font-semibold group-hover:text-purple-400 transition-colors">
+          <div className="text-lg font-semibold group-hover:text-primary transition-colors">
             Profile Settings
           </div>
           <p className="text-white/40 text-sm mt-1">
@@ -92,7 +105,7 @@ export default async function DashboardPage() {
           </p>
           <Link
             href="/dashboard/games"
-            className="inline-flex px-5 py-2.5 rounded-full text-sm font-medium bg-purple-500 text-white hover:bg-purple-500/90 transition-colors"
+            className="inline-flex px-5 py-2.5 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
           >
             Add Your First Game
           </Link>

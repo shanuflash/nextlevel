@@ -3,7 +3,9 @@ import { user } from "@/schema/auth-schema";
 import { userGame, game } from "@/schema/game-schema";
 import { desc, count, eq, sql } from "drizzle-orm";
 import Link from "next/link";
+import Image from "next/image";
 import { igdbCover } from "@/src/lib/igdb";
+import { BLUR_DATA_URL } from "@/src/lib/constants";
 import { PublicNav } from "@/src/components/public-nav";
 
 export default async function ExplorePage() {
@@ -69,10 +71,14 @@ export default async function ExplorePage() {
                   >
                     <div className="relative aspect-3/4 overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/20">
                       {cover ? (
-                        <img
+                        <Image
                           src={cover}
                           alt={g.title}
-                          className="size-full object-cover"
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
+                          placeholder="blur"
+                          blurDataURL={BLUR_DATA_URL}
                         />
                       ) : (
                         <div className="size-full flex items-center justify-center text-2xl text-white/10">
@@ -112,13 +118,17 @@ export default async function ExplorePage() {
                   className="bg-white/3 rounded-2xl border border-white/8 p-5 flex items-center gap-4 hover:bg-white/5 transition-colors"
                 >
                   {u.image ? (
-                    <img
+                    <Image
                       src={u.image}
                       alt={u.name}
+                      width={48}
+                      height={48}
                       className="size-12 rounded-xl ring-1 ring-white/10"
+                      placeholder="blur"
+                      blurDataURL={BLUR_DATA_URL}
                     />
                   ) : (
-                    <div className="size-12 rounded-xl bg-purple-500/20 flex items-center justify-center text-lg font-bold text-purple-400">
+                    <div className="size-12 rounded-xl bg-primary/20 flex items-center justify-center text-lg font-bold text-primary">
                       {u.name[0]}
                     </div>
                   )}
@@ -134,7 +144,7 @@ export default async function ExplorePage() {
                     )}
                   </div>
                   <div className="text-right flex-none">
-                    <div className="text-sm font-bold text-purple-400">
+                    <div className="text-sm font-bold text-primary">
                       {u.gameCount}
                     </div>
                     <div className="text-[10px] text-white/30">games</div>

@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { PublicNav } from "@/src/components/public-nav";
 import { ProfileView } from "./profile-view";
+import { getSession } from "@/src/lib/session";
 
 export default async function ProfilePage({
   params,
@@ -18,6 +19,9 @@ export default async function ProfilePage({
   });
 
   if (!dbUser) notFound();
+
+  const session = await getSession();
+  const isOwner = session?.user?.id === dbUser.id;
 
   const userGames = await db
     .select({
@@ -86,7 +90,7 @@ export default async function ProfilePage({
       <PublicNav />
 
       <div className="mx-auto max-w-6xl px-6 py-10">
-        <ProfileView profile={profileData} />
+        <ProfileView profile={profileData} isOwner={isOwner} />
       </div>
     </div>
   );

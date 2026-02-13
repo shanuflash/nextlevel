@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { updateProfile } from "./actions";
+import { BLUR_DATA_URL } from "@/src/lib/constants";
 
 interface UserData {
   name: string;
@@ -53,13 +55,17 @@ export function SettingsClient({ user }: { user: UserData }) {
 
           <div className="flex items-center gap-4">
             {user.image ? (
-              <img
+              <Image
                 src={user.image}
                 alt={user.name}
+                width={64}
+                height={64}
                 className="size-16 rounded-2xl ring-2 ring-white/10"
+                placeholder="blur"
+                blurDataURL={BLUR_DATA_URL}
               />
             ) : (
-              <div className="size-16 rounded-2xl bg-purple-500/20 flex items-center justify-center text-2xl font-bold text-purple-400">
+              <div className="size-16 rounded-2xl bg-primary/20 flex items-center justify-center text-2xl font-bold text-primary">
                 {user.name[0]}
               </div>
             )}
@@ -131,7 +137,7 @@ export function SettingsClient({ user }: { user: UserData }) {
           <button
             type="submit"
             disabled={isPending}
-            className="px-6 py-2.5 rounded-full text-sm font-medium bg-purple-500 text-white hover:bg-purple-500/90 transition-colors disabled:opacity-50"
+            className="px-6 py-2.5 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
             {isPending ? "Saving..." : "Save Changes"}
           </button>

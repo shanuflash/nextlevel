@@ -5,7 +5,7 @@ import { game, userGame } from "@/schema/game-schema";
 import { getSession } from "@/src/lib/session";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { fetchIGDBGame } from "@/src/lib/igdb";
+import { fetchIGDBGame, fetchIGDBGames } from "@/src/lib/igdb";
 import type { GameCategory } from "@/src/lib/constants";
 
 function generateId() {
@@ -76,6 +76,104 @@ export async function addGame(input: AddGameInput) {
 
   revalidatePath("/dashboard/games");
   revalidatePath("/dashboard");
+}
+
+interface BulkAddItem {
+  igdbId: number;
+  category: string;
+  rating?: number;
+}
+
+export async function bulkAddGames(items: BulkAddItem[]) {
+  const session = await getSession();
+  if (!session) throw new Error("Not authenticated");
+
+  const igdbIds = items.map((i) => i.igdbId);
+
+  // 1. Batch fetch: existing games from DB + missing ones from IGDB in parallel
+  const existingGames = await db.query.game.findMany({
+    where: (fields, { inArray }) => inArray(fields.igdbId, igdbIds),
+  });
+
+  const existingMap = new Map(existingGames.map((g) => [g.igdbId, g]));
+  const missingIds = igdbIds.filter((id) => !existingMap.has(id));
+
+  // Single batch IGDB call for all missing games
+  const igdbMap = missingIds.length > 0 ? await fetchIGDBGames(missingIds) : new Map();
+
+  // Insert missing games into DB in parallel
+  await Promise.all(
+    missingIds.map(async (igdbId) => {
+      const meta = igdbMap.get(igdbId);
+      if (!meta) return;
+      const gameId = generateId();
+      await db.insert(game).values({
+        id: gameId,
+        igdbId,
+        title: meta.title,
+        slug: meta.slug,
+        coverImageId: meta.coverImageId,
+        genres: meta.genres.join(", ") || null,
+        platforms: meta.platforms.join(", ") || null,
+        releaseDate: meta.releaseDate,
+        summary: meta.summary,
+      });
+      existingMap.set(igdbId, {
+        id: gameId,
+        igdbId,
+        title: meta.title,
+        slug: meta.slug,
+        coverImageId: meta.coverImageId,
+        genres: meta.genres.join(", ") || null,
+        platforms: meta.platforms.join(", ") || null,
+        releaseDate: meta.releaseDate,
+        summary: meta.summary,
+      });
+    }),
+  );
+
+  // 2. Check which games user already has (single query)
+  const gameIds = [...existingMap.values()].map((g) => g.id);
+  const existingUserGames = gameIds.length > 0
+    ? await db.query.userGame.findMany({
+        where: (fields, { and: a, eq: e, inArray }) =>
+          a(e(fields.userId, session.user.id), inArray(fields.gameId, gameIds)),
+      })
+    : [];
+  const userGameSet = new Set(existingUserGames.map((ug) => ug.gameId));
+
+  // 3. Insert new user games in parallel
+  const results: { igdbId: number; title: string; ok: boolean; error?: string }[] = [];
+
+  await Promise.all(
+    items.map(async (item) => {
+      const dbGame = existingMap.get(item.igdbId);
+      if (!dbGame) {
+        results.push({ igdbId: item.igdbId, title: `ID ${item.igdbId}`, ok: false, error: "Not found on IGDB" });
+        return;
+      }
+      if (userGameSet.has(dbGame.id)) {
+        results.push({ igdbId: item.igdbId, title: dbGame.title, ok: false, error: "Already in catalog" });
+        return;
+      }
+      try {
+        await db.insert(userGame).values({
+          id: generateId(),
+          userId: session.user.id,
+          gameId: dbGame.id,
+          category: item.category as GameCategory,
+          rating: item.rating ?? null,
+        });
+        results.push({ igdbId: item.igdbId, title: dbGame.title, ok: true });
+      } catch {
+        results.push({ igdbId: item.igdbId, title: dbGame.title, ok: false, error: "Failed to add" });
+      }
+    }),
+  );
+
+  revalidatePath("/dashboard/games");
+  revalidatePath("/dashboard");
+  return results;
 }
 
 export async function updateGame(formData: FormData) {

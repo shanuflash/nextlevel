@@ -72,3 +72,7 @@ export type GameCategory =
   | "want-to-play"
   | "on-hold"
   | "dropped";
+
+/** Tiny 1x1 dark pixel for next/image blur placeholder on remote images */
+export const BLUR_DATA_URL =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";

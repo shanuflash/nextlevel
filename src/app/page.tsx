@@ -10,7 +10,7 @@ export default async function LandingPage() {
     <div className="min-h-screen bg-[#09090d] text-white">
       <nav className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-tight">
-          Next<span className="text-purple-400">Level</span>
+          Next<span className="text-primary">Level</span>
         </h1>
         <div className="flex items-center gap-4">
           <Link
@@ -29,12 +29,12 @@ export default async function LandingPage() {
       </nav>
 
       <div className="mx-auto max-w-6xl px-6 pt-24 pb-32 text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-medium mb-6">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium mb-6">
           Manual Game Tracker
         </div>
         <h2 className="text-5xl sm:text-6xl font-bold tracking-tight leading-[1.1] max-w-3xl mx-auto">
           Your games.{" "}
-          <span className="text-purple-400">Your categories.</span>{" "}
+          <span className="text-primary">Your categories.</span>{" "}
           Your profile.
         </h2>
         <p className="text-white/50 text-lg mt-6 max-w-xl mx-auto leading-relaxed">
@@ -44,7 +44,7 @@ export default async function LandingPage() {
         <div className="flex items-center justify-center gap-4 mt-10">
           <Link
             href="/login"
-            className="px-6 py-3 rounded-full text-sm font-medium bg-purple-500 text-white hover:bg-purple-500/90 transition-colors"
+            className="px-6 py-3 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
           >
             Get Started
           </Link>

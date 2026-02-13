@@ -20,7 +20,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold tracking-tight">
-            Next<span className="text-purple-400">Level</span>
+            Next<span className="text-primary">Level</span>
           </h1>
           <p className="text-white/40 text-sm mt-2">
             Track your games. Showcase your taste.

@@ -4,7 +4,9 @@ import { user } from "@/schema/auth-schema";
 import { eq, count } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { fetchIGDBGame, igdbCover } from "@/src/lib/igdb";
+import { BLUR_DATA_URL } from "@/src/lib/constants";
 import { PublicNav } from "@/src/components/public-nav";
 import { CATEGORIES } from "@/src/lib/constants";
 
@@ -89,12 +91,16 @@ export default async function GameDetailPage({
       <div className="mx-auto max-w-6xl px-6 py-10">
         <div className="flex gap-8 mb-10">
           <div className="w-48 flex-none">
-            <div className="aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/10">
+            <div className="aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/10 relative">
               {coverUrl ? (
-                <img
+                <Image
                   src={coverUrl}
                   alt={meta.title}
-                  className="size-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="192px"
+                  placeholder="blur"
+                  blurDataURL={BLUR_DATA_URL}
                 />
               ) : (
                 <div className="size-full flex items-center justify-center text-4xl text-white/10">
@@ -133,7 +139,7 @@ export default async function GameDetailPage({
             <div className="mt-6">
               <Link
                 href="/dashboard/games"
-                className="inline-flex px-5 py-2.5 rounded-full text-sm font-medium bg-purple-500 text-white hover:bg-purple-500/90 transition-colors"
+                className="inline-flex px-5 py-2.5 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
               >
                 + Add to My Library
               </Link>
@@ -203,13 +209,17 @@ export default async function GameDetailPage({
                       className="flex items-center gap-3 hover:bg-white/5 -mx-2 px-2 py-1.5 rounded-lg transition-colors"
                     >
                       {u.image ? (
-                        <img
+                        <Image
                           src={u.image}
                           alt={u.name}
+                          width={32}
+                          height={32}
                           className="size-8 rounded-lg ring-1 ring-white/10"
+                          placeholder="blur"
+                          blurDataURL={BLUR_DATA_URL}
                         />
                       ) : (
-                        <div className="size-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-xs font-bold text-purple-400">
+                        <div className="size-8 rounded-lg bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
                           {u.name[0]}
                         </div>
                       )}
