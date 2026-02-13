@@ -122,7 +122,7 @@ npx tsx scripts/admin.ts <command>
 | `update-popularity` | Update popularity scores for all games |
 | `update-featured` | Refresh Most Anticipated and Recently Released flags from IGDB |
 | `find-orphans` | Find `user_game` rows pointing to missing games |
-| `clean-orphans` | Delete orphaned `user_game` rows |
+| `recover-games` | Restore missing game rows from a Turso point-in-time fork (requires `TURSO_API_TOKEN`) |
 | `backup` | Fork the database to a timestamped backup via Turso API (requires `TURSO_API_TOKEN`) |
 
 ## Database Schema

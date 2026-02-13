@@ -82,7 +82,7 @@ export default async function DashboardPage() {
             Welcome back, {session.user.name}
           </h1>
           <p className="text-white/40 text-sm mt-1">
-            Here&apos;s an overview of your game catalog.
+            Your catalog overview.
           </p>
         </div>
         {username && <ProfileUrlCopy username={username} />}
@@ -147,9 +147,7 @@ export default async function DashboardPage() {
                         sizes="(max-width: 640px) 33vw, 20vw"
                       />
                     ) : (
-                      <div className="size-full flex items-center justify-center text-3xl text-white/10">
-                        🎮
-                      </div>
+                      <div className="size-full bg-white/5" />
                     )}
                     {g.releaseDate && (
                       <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-emerald-400 text-[10px] font-bold px-1.5 py-0.5 rounded-lg">
@@ -200,9 +198,7 @@ export default async function DashboardPage() {
                         sizes="(max-width: 640px) 33vw, 20vw"
                       />
                     ) : (
-                      <div className="size-full flex items-center justify-center text-3xl text-white/10">
-                        🎮
-                      </div>
+                      <div className="size-full bg-white/5" />
                     )}
                     {g.releaseDate && (
                       <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-blue-400 text-[10px] font-bold px-1.5 py-0.5 rounded-lg">
@@ -254,7 +250,6 @@ export default async function DashboardPage() {
 
       {totalGames === 0 && (
         <div className="text-center py-16 bg-white/3 rounded-2xl border border-white/8">
-          <div className="text-4xl mb-4">🎮</div>
           <h2 className="text-lg font-semibold">No games yet</h2>
           <p className="text-white/40 text-sm mt-1 mb-6">
             Start building your catalog by adding your first game.

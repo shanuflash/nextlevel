@@ -17,8 +17,8 @@ export const game = sqliteTable(
     title: text("title").notNull(),
     slug: text("slug").notNull(),
     coverImageId: text("cover_image_id"),
-    genres: text("genres"), // comma-separated
-    platforms: text("platforms"), // comma-separated
+    genres: text("genres"),
+    platforms: text("platforms"),
     releaseDate: text("release_date"),
     summary: text("summary"),
     popularity: integer("popularity").default(0).notNull(),
@@ -49,7 +49,7 @@ export const userGame = sqliteTable(
     category: text("category", {
       enum: ["finished", "playing", "want-to-play", "on-hold", "dropped"],
     }).notNull(),
-    rating: real("rating"), // 1-10
+    rating: real("rating"),
     notes: text("notes"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
@@ -66,7 +66,6 @@ export const userGame = sqliteTable(
   ],
 );
 
-// Relations
 export const gameRelations = relations(game, ({ many }) => ({
   userGames: many(userGame),
 }));

@@ -47,7 +47,7 @@ export default async function ExplorePage() {
         <div>
           <h1 className="text-3xl font-bold">Explore</h1>
           <p className="text-white/40 text-sm mt-1">
-            Discover users and popular games on NextLevel.
+            Popular games and user catalogs.
           </p>
         </div>
 
@@ -79,9 +79,7 @@ export default async function ExplorePage() {
                           sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
                         />
                       ) : (
-                        <div className="size-full flex items-center justify-center text-2xl text-white/10">
-                          🎮
-                        </div>
+                        <div className="size-full bg-white/5" />
                       )}
                       <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent p-3 pt-8">
                         <p className="text-xs font-semibold leading-tight line-clamp-2">

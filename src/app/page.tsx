@@ -59,34 +59,24 @@ export default async function LandingPage() {
 
       <div className="mx-auto max-w-6xl px-6 pb-32">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            {
-              title: "Categorize",
-              desc: "Organize games into Finished, Playing, Want to Play, On Hold, or Dropped.",
-              icon: "📂",
-            },
-            {
-              title: "Rate & Track",
-              desc: "Add ratings and notes. Keep your gaming history complete.",
-              icon: "⭐",
-            },
-            {
-              title: "Share",
-              desc: "Get a beautiful public profile at /u/yourname. Show off your taste.",
-              icon: "🔗",
-            },
-          ].map((f) => (
-            <div
-              key={f.title}
-              className="bg-white/3 rounded-2xl border border-white/8 p-6"
-            >
-              <div className="text-2xl mb-3">{f.icon}</div>
-              <h3 className="font-semibold text-sm">{f.title}</h3>
-              <p className="text-white/40 text-sm mt-1 leading-relaxed">
-                {f.desc}
-              </p>
-            </div>
-          ))}
+          <div className="bg-white/3 rounded-2xl border border-white/8 p-6">
+            <h3 className="font-semibold text-sm">Categorize</h3>
+            <p className="text-white/40 text-sm mt-1 leading-relaxed">
+              Organize games into Finished, Playing, Want to Play, On Hold, or Dropped.
+            </p>
+          </div>
+          <div className="bg-white/3 rounded-2xl border border-white/8 p-6">
+            <h3 className="font-semibold text-sm">Rate & Track</h3>
+            <p className="text-white/40 text-sm mt-1 leading-relaxed">
+              Add ratings and notes. Keep your gaming history complete.
+            </p>
+          </div>
+          <div className="bg-white/3 rounded-2xl border border-white/8 p-6">
+            <h3 className="font-semibold text-sm">Share</h3>
+            <p className="text-white/40 text-sm mt-1 leading-relaxed">
+              Get a public profile at /u/yourname. Show off your taste.
+            </p>
+          </div>
         </div>
       </div>
 

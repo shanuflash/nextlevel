@@ -5,17 +5,15 @@ import { eq } from "drizzle-orm";
 import { getIGDBToken } from "@/src/lib/igdb";
 
 export const runtime = "nodejs";
-export const maxDuration = 60; // Vercel Hobby max
+export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
-  // Verify cron secret to prevent unauthorized access
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    // 1. Get all games from DB
     const allGames = await db
       .select({ id: game.id, igdbId: game.igdbId })
       .from(game);
@@ -24,7 +22,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: "No games to update", updated: 0 });
     }
 
-    // 2. Batch-fetch popularity scores from IGDB
     const token = await getIGDBToken();
     const headers = {
       "Client-ID": process.env.TWITCH_CLIENT_ID!,
@@ -35,7 +32,6 @@ export async function GET(req: NextRequest) {
     const igdbIds = allGames.map((g) => g.igdbId);
     const scores = new Map<number, number>();
 
-    // Chunk into batches of 500 (IGDB limit)
     const chunks: number[][] = [];
     for (let i = 0; i < igdbIds.length; i += 500) {
       chunks.push(igdbIds.slice(i, i + 500));
@@ -52,7 +48,7 @@ export async function GET(req: NextRequest) {
       if (!res.ok) {
         console.error(
           `[cron] IGDB chunk failed: ${res.status}`,
-          await res.text(),
+          await res.text()
         );
         continue;
       }
@@ -64,15 +60,10 @@ export async function GET(req: NextRequest) {
       }[] = await res.json();
 
       for (const g of raw) {
-        // Weight hypes 10x since they're rarer and represent active anticipation
-        scores.set(
-          g.id,
-          (g.total_rating_count ?? 0) + (g.hypes ?? 0) * 10,
-        );
+        scores.set(g.id, (g.total_rating_count ?? 0) + (g.hypes ?? 0) * 10);
       }
     }
 
-    // 3. Update each game's popularity in the DB
     let updated = 0;
     for (const g of allGames) {
       const score = scores.get(g.igdbId);
@@ -85,10 +76,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    console.log(
-      `[cron] Updated popularity for ${updated}/${allGames.length} games`,
-    );
-
     return NextResponse.json({
       message: `Updated ${updated} of ${allGames.length} games`,
       updated,
@@ -98,7 +85,7 @@ export async function GET(req: NextRequest) {
     console.error("[cron] update-popularity failed:", e);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

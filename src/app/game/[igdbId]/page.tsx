@@ -101,9 +101,7 @@ export default async function GameDetailPage({
                   sizes="192px"
                 />
               ) : (
-                <div className="size-full flex items-center justify-center text-4xl text-white/10">
-                  🎮
-                </div>
+                <div className="size-full bg-white/5" />
               )}
             </div>
           </div>

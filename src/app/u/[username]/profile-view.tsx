@@ -104,7 +104,7 @@ function GameModal({
     >
       <div className="bg-[#12121a] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden">
         {/* Cover image header */}
-        <div className="relative aspect-[16/9] overflow-hidden bg-white/5">
+        <div className="relative aspect-video overflow-hidden bg-white/5">
           {coverUrl ? (
             <Image
               src={coverUrl}
@@ -114,11 +114,9 @@ function GameModal({
               sizes="(max-width: 768px) 100vw, 448px"
             />
           ) : (
-            <div className="size-full flex items-center justify-center text-5xl text-white/10">
-              🎮
-            </div>
+            <div className="size-full bg-white/5" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#12121a] via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-[#12121a] via-transparent to-transparent" />
           <button
             onClick={onClose}
             className="absolute top-3 right-3 size-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white transition-colors"
@@ -376,9 +374,7 @@ function MasonryGrid({
                       sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                     />
                   ) : (
-                    <div className="size-full flex items-center justify-center text-3xl text-white/10 bg-white/5">
-                      🎮
-                    </div>
+                    <div className="size-full bg-white/5" />
                   )}
                   {g.rating && (
                     <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
@@ -421,13 +417,19 @@ export function ProfileView({
 
   const filteredGames =
     activeCategory === "all"
-      ? profile.categories.flatMap((cat) =>
-          cat.games.map((g) => ({
-            ...g,
-            categoryId: cat.id,
-            categoryLabel: cat.label,
-          }))
-        )
+      ? profile.categories
+          .flatMap((cat) =>
+            cat.games.map((g) => ({
+              ...g,
+              categoryId: cat.id,
+              categoryLabel: cat.label,
+            }))
+          )
+          .sort((a, b) => {
+            const aPlaying = a.categoryId === "playing" ? 0 : 1;
+            const bPlaying = b.categoryId === "playing" ? 0 : 1;
+            return aPlaying - bPlaying;
+          })
       : (profile.categories
           .find((c) => c.id === activeCategory)
           ?.games.map((g) => ({
@@ -478,7 +480,6 @@ export function ProfileView({
 
       {filteredGames.length === 0 ? (
         <div className="text-center py-16 bg-white/3 rounded-2xl border border-white/8">
-          <div className="text-3xl mb-3">🎮</div>
           <p className="text-white/40 text-sm">No games in this catalog yet.</p>
         </div>
       ) : (

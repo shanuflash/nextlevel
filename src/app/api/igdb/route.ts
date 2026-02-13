@@ -29,6 +29,7 @@ function mapResult(g: IGDBRawSearchResult): IGDBGameMeta {
       ? new Date(g.first_release_date * 1000).toISOString().split("T")[0]
       : null,
     summary: g.summary ?? null,
+    popularity: (g.total_rating_count ?? 0),
   };
 }
 
@@ -46,7 +47,6 @@ async function igdbFetch(
   });
 
   if (res.status === 401) {
-    // Token expired — clear cache and retry once with a fresh token
     const freshToken = await getIGDBToken(true);
     const retryHeaders = { ...headers, Authorization: `Bearer ${freshToken}` };
     const retry = await fetch("https://api.igdb.com/v4/games", {
@@ -84,13 +84,11 @@ export async function GET(req: NextRequest) {
     const escaped = query.replace(/"/g, '\\"');
     const isNumeric = /^\d+$/.test(query.trim());
 
-    // Always do a text search
     const games = await igdbFetch(
       headers,
       `fields ${FIELDS};\nwhere name ~ *"${escaped}"*;\nsort total_rating_count desc;\nlimit 10;`,
     );
 
-    // If the query is numeric, also try an ID lookup and prepend it
     if (isNumeric) {
       const idGames = await igdbFetch(
         headers,
@@ -103,8 +101,6 @@ export async function GET(req: NextRequest) {
         }
       }
     }
-
-    console.log(`[IGDB] Query: "${query}", results: ${games.length}`);
 
     return NextResponse.json(games.map(mapResult));
   } catch (e) {

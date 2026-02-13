@@ -43,7 +43,6 @@ export default function SignupPage() {
     }
   }, [session, sessionLoading, router]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -52,7 +51,6 @@ export default function SignupPage() {
   }, []);
 
   const checkUsername = useCallback((value: string) => {
-    // Cancel any pending check
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (abortRef.current) abortRef.current.abort();
 
@@ -64,7 +62,6 @@ export default function SignupPage() {
       return;
     }
 
-    // Client-side validation first — skip API for invalid input
     const validationError = validateUsername(trimmed);
     if (validationError) {
       setUsernameStatus("invalid");
@@ -95,7 +92,6 @@ export default function SignupPage() {
           setUsernameHint("Username is already taken");
         }
       } catch {
-        // Aborted or network error — ignore
         if (!controller.signal.aborted) {
           setUsernameStatus("idle");
           setUsernameHint("");
@@ -114,7 +110,6 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
 
-    // Final client-side check
     const validationError = validateUsername(username);
     if (validationError) {
       setError(validationError);

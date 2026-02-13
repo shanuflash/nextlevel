@@ -99,7 +99,6 @@ function ProfileSection({ user }: { user: UserData }) {
 
       <form action={handleSubmit}>
         <div className="bg-white/[0.03] rounded-2xl border border-white/[0.06] divide-y divide-white/[0.06]">
-          {/* Avatar row */}
           <div className="p-5 flex items-center gap-4">
             {user.image ? (
               <Image
@@ -155,14 +154,13 @@ function ProfileSection({ user }: { user: UserData }) {
             </p>
             {user.username && (
               <p className="text-[11px] text-white/30 mt-1">
-                Your public profile:{" "}
+                Public profile:{" "}
                 <a
                   href={`/u/${user.username}`}
                   className="text-primary/70 hover:text-primary transition-colors"
                 >
-                  nextlevel.app/u/{user.username}
+                  /u/{user.username}
                 </a>
-                {" "}&mdash; share this link with anyone!
               </p>
             )}
           </div>

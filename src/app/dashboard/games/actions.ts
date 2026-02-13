@@ -95,7 +95,6 @@ export async function bulkAddGames(items: BulkAddItem[]) {
 
   const igdbIds = items.map((i) => i.igdbId);
 
-  // 1. Batch fetch: existing games from DB + missing ones from IGDB in parallel
   const existingGames = await db.query.game.findMany({
     where: (fields, { inArray }) => inArray(fields.igdbId, igdbIds),
   });
@@ -103,10 +102,8 @@ export async function bulkAddGames(items: BulkAddItem[]) {
   const existingMap = new Map(existingGames.map((g) => [g.igdbId, g]));
   const missingIds = igdbIds.filter((id) => !existingMap.has(id));
 
-  // Single batch IGDB call for all missing games
   const igdbMap = missingIds.length > 0 ? await fetchIGDBGames(missingIds) : new Map();
 
-  // Insert missing games into DB in parallel
   await Promise.all(
     missingIds.map(async (igdbId) => {
       const meta = igdbMap.get(igdbId);
@@ -141,7 +138,6 @@ export async function bulkAddGames(items: BulkAddItem[]) {
     }),
   );
 
-  // 2. Check which games user already has (single query)
   const gameIds = [...existingMap.values()].map((g) => g.id);
   const existingUserGames = gameIds.length > 0
     ? await db.query.userGame.findMany({
@@ -151,7 +147,6 @@ export async function bulkAddGames(items: BulkAddItem[]) {
     : [];
   const userGameSet = new Set(existingUserGames.map((ug) => ug.gameId));
 
-  // 3. Insert new user games in parallel
   const results: { igdbId: number; title: string; ok: boolean; error?: string }[] = [];
 
   await Promise.all(

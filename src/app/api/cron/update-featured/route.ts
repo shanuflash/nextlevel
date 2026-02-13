@@ -41,7 +41,6 @@ async function upsertGame(raw: IGDBRaw) {
     (raw.total_rating_count ?? 0) + (raw.hypes ?? 0) * 10;
 
   if (existing) {
-    // Update metadata
     await db
       .update(game)
       .set({
@@ -57,7 +56,6 @@ async function upsertGame(raw: IGDBRaw) {
       .where(eq(game.id, existing.id));
     return existing.id;
   } else {
-    // Insert new game
     const id = crypto.randomUUID();
     await db.insert(game).values({
       id,
@@ -92,7 +90,6 @@ export async function GET(req: NextRequest) {
     const now = Math.floor(Date.now() / 1000);
     const ninetyDaysAgo = now - 90 * 24 * 60 * 60;
 
-    // 1. Fetch top 5 hyped (anticipated) games from IGDB
     const hypeRes = await fetch("https://api.igdb.com/v4/games", {
       method: "POST",
       headers,
@@ -100,7 +97,6 @@ export async function GET(req: NextRequest) {
     });
     const hypeGames: IGDBRaw[] = hypeRes.ok ? await hypeRes.json() : [];
 
-    // 2. Fetch top 5 recently released games from IGDB
     const recentRes = await fetch("https://api.igdb.com/v4/games", {
       method: "POST",
       headers,
@@ -110,12 +106,10 @@ export async function GET(req: NextRequest) {
       ? await recentRes.json()
       : [];
 
-    // 3. Clear ALL existing flags first
     await db.execute(
       sql`UPDATE game SET is_featured_anticipated = 0, is_featured_released = 0`,
     );
 
-    // 4. Upsert anticipated games and set flag
     let anticipatedCount = 0;
     for (const raw of hypeGames) {
       const gameId = await upsertGame(raw);
@@ -126,7 +120,6 @@ export async function GET(req: NextRequest) {
       anticipatedCount++;
     }
 
-    // 5. Upsert recently released games and set flag
     let releasedCount = 0;
     for (const raw of recentGames) {
       const gameId = await upsertGame(raw);
@@ -136,10 +129,6 @@ export async function GET(req: NextRequest) {
         .where(eq(game.id, gameId));
       releasedCount++;
     }
-
-    console.log(
-      `[cron] Updated featured: ${anticipatedCount} anticipated, ${releasedCount} released`,
-    );
 
     return NextResponse.json({
       message: `Updated ${anticipatedCount} anticipated, ${releasedCount} released`,

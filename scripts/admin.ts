@@ -27,7 +27,7 @@ const client = createClient({
   authToken: process.env.TURSO_AUTH_TOKEN!,
 });
 
-// ─── IGDB helpers ───────────────────────────────────────────────────────────
+// IGDB helpers
 
 async function getIGDBToken(): Promise<string> {
   const res = await fetch("https://id.twitch.tv/oauth2/token", {
@@ -52,7 +52,7 @@ function igdbHeaders(token: string) {
   };
 }
 
-// ─── Commands ───────────────────────────────────────────────────────────────
+// Commands
 
 async function stats() {
   const gameCount = await client.execute("SELECT count(*) as cnt FROM game");
@@ -534,10 +534,9 @@ async function updateFeatured() {
       sql: "UPDATE game SET is_featured_anticipated = 1 WHERE id = ?",
       args: [id],
     });
-    console.log(`  ✓ ${raw.name}`);
+    console.log(`  + ${raw.name}`);
   }
 
-  // Upsert recently released games and set flag
   console.log("Setting recently released flags...");
   for (const raw of recentGames) {
     const id = await upsertRaw(raw);
@@ -545,7 +544,7 @@ async function updateFeatured() {
       sql: "UPDATE game SET is_featured_released = 1 WHERE id = ?",
       args: [id],
     });
-    console.log(`  ✓ ${raw.name}`);
+    console.log(`  + ${raw.name}`);
   }
 
   console.log(
@@ -553,7 +552,7 @@ async function updateFeatured() {
   );
 }
 
-// ─── CLI ────────────────────────────────────────────────────────────────────
+// CLI
 
 const command = process.argv[2];
 

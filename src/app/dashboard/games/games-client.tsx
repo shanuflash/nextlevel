@@ -51,7 +51,6 @@ function AddGameDialog({
       return;
     }
 
-    // Cancel any in-flight request
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -154,9 +153,7 @@ function AddGameDialog({
                                 sizes="40px"
                               />
                             ) : (
-                              <div className="size-full flex items-center justify-center text-white/10 text-xs">
-                                🎮
-                              </div>
+                              <div className="size-full bg-white/5" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -209,9 +206,7 @@ function AddGameDialog({
                       sizes="64px"
                     />
                   ) : (
-                    <div className="size-full flex items-center justify-center text-2xl text-white/10">
-                      🎮
-                    </div>
+                    <div className="size-full bg-white/5" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -340,7 +335,6 @@ function BulkAddDialog({
       return;
     }
 
-    // Cancel any in-flight request
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -440,7 +434,6 @@ function BulkAddDialog({
         </div>
 
         <div className="p-6 overflow-y-auto flex-1 space-y-4">
-          {/* Queue chips (top) */}
           {queue.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[11px] text-white/30 mr-0.5">
@@ -476,7 +469,6 @@ function BulkAddDialog({
             </div>
           )}
 
-          {/* Default category selector */}
           <div>
             <label className="text-xs text-white/40 block mb-1.5">
               Default category for new games
@@ -498,7 +490,6 @@ function BulkAddDialog({
             </div>
           </div>
 
-          {/* Search */}
           <input
             ref={inputRef}
             value={query}
@@ -507,7 +498,6 @@ function BulkAddDialog({
             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 placeholder:text-white/25"
           />
 
-          {/* Search results */}
           <div className="min-h-[120px]">
             {isSearching && (
               <div className="flex items-center justify-center py-8">
@@ -542,9 +532,7 @@ function BulkAddDialog({
                             sizes="40px"
                           />
                         ) : (
-                          <div className="size-full flex items-center justify-center text-white/10 text-xs">
-                            🎮
-                          </div>
+                          <div className="size-full bg-white/5" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -588,7 +576,6 @@ function BulkAddDialog({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="p-6 pt-0 flex justify-end gap-2">
           <button
             onClick={onClose}
@@ -657,8 +644,7 @@ function EditGameDialog({
       }}
     >
       <div className="bg-[#12121a] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden">
-        {/* Cover image header */}
-        <div className="relative aspect-[16/9] overflow-hidden bg-white/5">
+        <div className="relative aspect-video overflow-hidden bg-white/5">
           {coverUrl ? (
             <Image
               src={coverUrl}
@@ -668,11 +654,9 @@ function EditGameDialog({
               sizes="(max-width: 768px) 100vw, 448px"
             />
           ) : (
-            <div className="size-full flex items-center justify-center text-5xl text-white/10">
-              🎮
-            </div>
+            <div className="size-full bg-white/5" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#12121a] via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-[#12121a] via-transparent to-transparent" />
           <button
             onClick={onClose}
             className="absolute top-3 right-3 size-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white transition-colors"
@@ -682,7 +666,6 @@ function EditGameDialog({
         </div>
 
         <div className="p-6 -mt-8 relative space-y-4">
-          {/* Title & meta */}
           <div>
             <h2 className="text-xl font-bold leading-tight">{game.title}</h2>
             {game.genre && (
@@ -690,7 +673,6 @@ function EditGameDialog({
             )}
           </div>
 
-          {/* Current status */}
           {!isEditing && (
             <div className="flex items-center gap-3">
               {cat && (
@@ -708,7 +690,6 @@ function EditGameDialog({
             </div>
           )}
 
-          {/* Edit form */}
           {isEditing && (
             <form action={handleSubmit} className="space-y-4">
               <input type="hidden" name="userGameId" value={game.id} />
@@ -779,7 +760,6 @@ function EditGameDialog({
             </form>
           )}
 
-          {/* Action buttons */}
           {!isEditing && (
             <div className="flex gap-2 pt-1">
               <Link
@@ -871,10 +851,9 @@ export function GamesClient({ games }: { games: UserGameRow[] }) {
 
       {filtered.length === 0 ? (
         <div className="text-center py-16 bg-white/3 rounded-2xl border border-white/8">
-          <div className="text-3xl mb-3">🎮</div>
           <p className="text-white/40 text-sm">
             {activeCategory === "all"
-              ? "No games yet. Add your first game above!"
+              ? "No games yet. Add your first game above."
               : "No games in this category."}
           </p>
         </div>
@@ -899,9 +878,7 @@ export function GamesClient({ games }: { games: UserGameRow[] }) {
                       sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
                     />
                   ) : (
-                    <div className="size-full flex items-center justify-center text-3xl text-white/10">
-                      🎮
-                    </div>
+                    <div className="size-full bg-white/5" />
                   )}
                   {g.rating && (
                     <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
