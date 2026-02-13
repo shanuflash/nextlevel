@@ -30,7 +30,7 @@ export default async function LandingPage() {
 
       <div className="mx-auto max-w-6xl px-6 pt-24 pb-32 text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium mb-6">
-          Manual Game Tracker
+          Your Gaming Catalog
         </div>
         <h2 className="text-5xl sm:text-6xl font-bold tracking-tight leading-[1.1] max-w-3xl mx-auto">
           Your games.{" "}
@@ -92,9 +92,20 @@ export default async function LandingPage() {
 
       <footer className="border-t border-white/6">
         <div className="mx-auto max-w-6xl px-6 py-8 flex items-center justify-between">
-          <span className="text-xs text-white/25">
-            NextLevel — Manual Game Tracker
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-white/25">
+              NextLevel — Your Gaming Catalog
+            </span>
+            <span className="text-white/10">·</span>
+            <a
+              href="https://www.igdb.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-white/20 hover:text-white/40 transition-colors"
+            >
+              Powered by IGDB
+            </a>
+          </div>
           <Link
             href="/login"
             className="text-xs text-white/30 hover:text-white/60 transition-colors"

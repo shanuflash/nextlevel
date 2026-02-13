@@ -21,6 +21,15 @@ export const game = sqliteTable(
     platforms: text("platforms"), // comma-separated
     releaseDate: text("release_date"),
     summary: text("summary"),
+    popularity: integer("popularity").default(0).notNull(),
+    isFeaturedAnticipated: integer("is_featured_anticipated", {
+      mode: "boolean",
+    })
+      .default(false)
+      .notNull(),
+    isFeaturedReleased: integer("is_featured_released", { mode: "boolean" })
+      .default(false)
+      .notNull(),
   },
   (table) => [index("game_igdbId_idx").on(table.igdbId)],
 );

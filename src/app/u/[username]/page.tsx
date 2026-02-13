@@ -1,7 +1,7 @@
 import { db } from "@/src/lib/auth";
 import { user } from "@/schema/auth-schema";
 import { userGame, game } from "@/schema/game-schema";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { PublicNav } from "@/src/components/public-nav";
 import { ProfileView } from "./profile-view";
@@ -36,7 +36,8 @@ export default async function ProfilePage({
     })
     .from(userGame)
     .innerJoin(game, eq(userGame.gameId, game.id))
-    .where(eq(userGame.userId, dbUser.id));
+    .where(eq(userGame.userId, dbUser.id))
+    .orderBy(desc(game.popularity));
 
   const categoryDefs = [
     { id: "finished", label: "Finished" },
@@ -84,12 +85,28 @@ export default async function ProfilePage({
   };
 
   return (
-    <div className="min-h-screen bg-[#09090d] text-white">
+    <div className="min-h-screen bg-[#09090d] text-white flex flex-col">
       <PublicNav />
 
-      <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="mx-auto max-w-6xl px-6 py-10 w-full flex-1">
         <ProfileView profile={profileData} isOwner={isOwner} />
       </div>
+
+      <footer className="border-t border-white/6 mt-auto">
+        <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
+          <span className="text-xs text-white/20">
+            NextLevel — Your Gaming Catalog
+          </span>
+          <a
+            href="https://www.igdb.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-white/20 hover:text-white/40 transition-colors"
+          >
+            Powered by IGDB
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }

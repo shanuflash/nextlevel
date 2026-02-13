@@ -8,7 +8,6 @@ import {
   CATEGORIES,
   CATEGORY_TAB_COLORS,
   CATEGORY_BADGE_COLORS,
-
 } from "@/src/lib/constants";
 import { updateGame, removeGame } from "@/src/app/dashboard/games/actions";
 import { toast } from "sonner";
@@ -42,15 +41,17 @@ interface ProfileData {
   categories: Category[];
 }
 
-const ASPECT_RATIOS = [
-  "aspect-[3/4]",
-  "aspect-[2/3]",
-  "aspect-[3/4]",
-  "aspect-[4/5]",
-  "aspect-[2/3]",
-  "aspect-[3/4]",
-  "aspect-[3/5]",
-  "aspect-[3/4]",
+// Each entry: [aspect-ratio class, row-span count]
+// Row spans based on a 10px grid-row size + 16px gap
+const CARD_VARIANTS: [string, number][] = [
+  ["aspect-[3/4]", 5],
+  ["aspect-[2/3]", 6],
+  ["aspect-[3/4]", 5],
+  ["aspect-[4/5]", 5],
+  ["aspect-[2/3]", 6],
+  ["aspect-[3/4]", 5],
+  ["aspect-[3/5]", 7],
+  ["aspect-[3/4]", 5],
 ];
 
 /* ─── Game Detail / Edit Modal ─── */
@@ -278,9 +279,7 @@ function BentoHeader({ profile }: { profile: ProfileData }) {
           </h1>
           <p className="text-white/40">@{profile.username}</p>
           {profile.bio && (
-            <p className="text-white/50 mt-2 text-sm max-w-md">
-              {profile.bio}
-            </p>
+            <p className="text-white/50 mt-2 text-sm max-w-md">{profile.bio}</p>
           )}
         </div>
       </div>
@@ -337,7 +336,7 @@ export function ProfileView({
             ...g,
             categoryId: cat.id,
             categoryLabel: cat.label,
-          })),
+          }))
         )
       : (profile.categories
           .find((c) => c.id === activeCategory)
@@ -363,9 +362,7 @@ export function ProfileView({
           }`}
         >
           All
-          <span className="ml-2 text-xs opacity-60">
-            {profile.totalGames}
-          </span>
+          <span className="ml-2 text-xs opacity-60">{profile.totalGames}</span>
         </button>
         {profile.categories.map((cat) => {
           const isActive = cat.id === activeCategory;
@@ -375,8 +372,8 @@ export function ProfileView({
               onClick={() => setActiveCategory(cat.id)}
               className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
                 isActive
-                  ? CATEGORY_TAB_COLORS[cat.id] ??
-                    "bg-white/15 text-white border-white/20"
+                  ? (CATEGORY_TAB_COLORS[cat.id] ??
+                    "bg-white/15 text-white border-white/20")
                   : "bg-transparent text-white/40 border-white/8 hover:text-white/60 hover:border-white/15"
               }`}
             >
@@ -395,18 +392,17 @@ export function ProfileView({
           <p className="text-white/40 text-sm">No games in this catalog yet.</p>
         </div>
       ) : (
-        <div className="columns-2 sm:columns-3 lg:columns-4 gap-4 space-y-4">
-          {filteredGames.map((g, i) => {
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {filteredGames.map((g) => {
             const coverUrl = igdbCover(g.coverImageId);
+            const cat = CATEGORIES.find((c) => c.id === g.categoryId);
             return (
               <button
                 key={g.id}
                 onClick={() => setSelectedGame(g)}
-                className="break-inside-avoid group cursor-pointer block w-full text-left"
+                className="group relative text-left"
               >
-                <div
-                  className={`relative overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/6 transition-all duration-300 group-hover:ring-white/20 group-hover:shadow-2xl group-hover:shadow-primary/8 ${ASPECT_RATIOS[i % ASPECT_RATIOS.length]}`}
-                >
+                <div className="relative aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/6 transition-all duration-300 group-hover:ring-white/20 group-hover:shadow-2xl group-hover:shadow-primary/8 group-hover:-translate-y-0.5">
                   {coverUrl ? (
                     <Image
                       src={coverUrl}
@@ -420,25 +416,20 @@ export function ProfileView({
                       🎮
                     </div>
                   )}
-                  {activeCategory === "all" && (
-                    <div
-                      className={`absolute top-2.5 left-2.5 text-[10px] font-medium px-2 py-0.5 rounded-lg border backdrop-blur-sm ${
-                        CATEGORY_BADGE_COLORS[g.categoryId] ??
-                        "bg-white/10 text-white/60 border-white/20"
-                      }`}
-                    >
-                      {g.categoryLabel}
-                    </div>
-                  )}
                   {g.rating && (
-                    <div className="absolute top-2.5 right-2.5 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
                       ★ {g.rating}
                     </div>
                   )}
-                  <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 via-black/30 to-transparent p-4 pt-12">
-                    <p className="text-sm font-semibold leading-tight">
+                  <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 via-black/30 to-transparent p-3 pt-10">
+                    <p className="text-xs font-semibold leading-tight line-clamp-2">
                       {g.title}
                     </p>
+                    {activeCategory === "all" && cat && (
+                      <p className={`text-[10px] mt-0.5 ${cat.color}`}>
+                        {cat.label}
+                      </p>
+                    )}
                   </div>
                 </div>
               </button>

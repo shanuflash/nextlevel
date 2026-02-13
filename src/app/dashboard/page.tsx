@@ -1,11 +1,11 @@
 import { getSession } from "@/src/lib/session";
 import { db } from "@/src/lib/auth";
-import { userGame } from "@/schema/game-schema";
+import { game, userGame } from "@/schema/game-schema";
 import { user } from "@/schema/auth-schema";
-import { eq, count } from "drizzle-orm";
+import { eq, count, desc } from "drizzle-orm";
 import Link from "next/link";
 import Image from "next/image";
-import { igdbCover, fetchHypeGames, fetchRecentReleases } from "@/src/lib/igdb";
+import { igdbCover } from "@/src/lib/igdb";
 import { CATEGORIES } from "@/src/lib/constants";
 import { ProfileUrlCopy } from "./profile-url-copy";
 
@@ -47,8 +47,18 @@ export default async function DashboardPage() {
       .from(userGame)
       .where(eq(userGame.userId, userId))
       .groupBy(userGame.category),
-    fetchHypeGames(5),
-    fetchRecentReleases(5),
+    db
+      .select()
+      .from(game)
+      .where(eq(game.isFeaturedAnticipated, true))
+      .orderBy(desc(game.popularity))
+      .limit(5),
+    db
+      .select()
+      .from(game)
+      .where(eq(game.isFeaturedReleased, true))
+      .orderBy(desc(game.popularity))
+      .limit(5),
     db.query.user.findFirst({
       where: eq(user.id, userId),
       columns: { username: true },
@@ -111,7 +121,7 @@ export default async function DashboardPage() {
         })}
       </div>
 
-      {/* Most Anticipated — Letterboxd style */}
+      {/* Most Anticipated */}
       {hypeGames.length > 0 && (
         <div>
           <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">
@@ -120,6 +130,7 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
             {hypeGames.map((g) => {
               const coverUrl = igdbCover(g.coverImageId, "t_cover_big_2x");
+              const firstGenre = g.genres?.split(", ")[0];
               return (
                 <Link
                   key={g.igdbId}
@@ -140,21 +151,20 @@ export default async function DashboardPage() {
                         🎮
                       </div>
                     )}
-                    {/* Release date badge */}
                     {g.releaseDate && (
                       <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-emerald-400 text-[10px] font-bold px-1.5 py-0.5 rounded-lg">
                         {relativeDate(g.releaseDate)}
                       </div>
                     )}
-                    {/* Bottom gradient with title */}
                     <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/50 to-transparent p-3 pt-12">
                       <p className="text-xs font-semibold leading-tight line-clamp-2">
                         {g.title}
                       </p>
-                      <p className="text-[10px] mt-0.5 text-white/40">
-                        {g.hypes.toLocaleString()} hype
-                        {g.genres.length > 0 && ` · ${g.genres[0]}`}
-                      </p>
+                      {firstGenre && (
+                        <p className="text-[10px] mt-0.5 text-white/40">
+                          {firstGenre}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </Link>
@@ -173,6 +183,7 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
             {recentGames.map((g) => {
               const coverUrl = igdbCover(g.coverImageId, "t_cover_big_2x");
+              const genreList = g.genres?.split(", ").slice(0, 2).join(" · ");
               return (
                 <Link
                   key={g.igdbId}
@@ -193,20 +204,20 @@ export default async function DashboardPage() {
                         🎮
                       </div>
                     )}
-                    {/* Release date badge */}
                     {g.releaseDate && (
                       <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-blue-400 text-[10px] font-bold px-1.5 py-0.5 rounded-lg">
                         {relativeDate(g.releaseDate)}
                       </div>
                     )}
-                    {/* Bottom gradient with title */}
                     <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/50 to-transparent p-3 pt-12">
                       <p className="text-xs font-semibold leading-tight line-clamp-2">
                         {g.title}
                       </p>
-                      <p className="text-[10px] mt-0.5 text-white/40">
-                        {g.genres.length > 0 ? g.genres.slice(0, 2).join(" · ") : ""}
-                      </p>
+                      {genreList && (
+                        <p className="text-[10px] mt-0.5 text-white/40">
+                          {genreList}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </Link>

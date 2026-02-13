@@ -1,0 +1,1 @@
+ALTER TABLE `game` ADD `popularity` integer DEFAULT 0 NOT NULL;

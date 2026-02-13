@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NextLevel — Manual Game Tracker",
+  title: "NextLevel — Your Gaming Catalog",
   description:
     "Track your games, build your catalog, and share your gaming profile with the world.",
 };
