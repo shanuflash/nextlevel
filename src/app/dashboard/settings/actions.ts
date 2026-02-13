@@ -12,7 +12,8 @@ export async function updateProfile(formData: FormData) {
   if (!session) throw new Error("Not authenticated");
 
   const name = formData.get("name") as string;
-  const username = formData.get("username") as string;
+  const rawUsername = (formData.get("username") as string)?.trim();
+  const username = rawUsername ? rawUsername.toLowerCase().replace(/[^a-z0-9_-]/g, "") : "";
   const bio = formData.get("bio") as string;
 
   if (!name) throw new Error("Name is required");
