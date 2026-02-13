@@ -61,7 +61,7 @@ export default async function DashboardPage() {
                 {categoryMap[cat.id] || 0}
               </div>
               <div className="text-xs text-white/40 mt-1">
-                {cat.emoji} {cat.label}
+                {cat.label}
               </div>
               <div
                 className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r ${bars[cat.id]}`}

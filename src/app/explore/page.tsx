@@ -5,7 +5,7 @@ import { desc, count, eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import Image from "next/image";
 import { igdbCover } from "@/src/lib/igdb";
-import { BLUR_DATA_URL } from "@/src/lib/constants";
+
 import { PublicNav } from "@/src/components/public-nav";
 
 export default async function ExplorePage() {
@@ -77,8 +77,6 @@ export default async function ExplorePage() {
                           fill
                           className="object-cover"
                           sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
-                          placeholder="blur"
-                          blurDataURL={BLUR_DATA_URL}
                         />
                       ) : (
                         <div className="size-full flex items-center justify-center text-2xl text-white/10">
@@ -124,8 +122,6 @@ export default async function ExplorePage() {
                       width={48}
                       height={48}
                       className="size-12 rounded-xl ring-1 ring-white/10"
-                      placeholder="blur"
-                      blurDataURL={BLUR_DATA_URL}
                     />
                   ) : (
                     <div className="size-12 rounded-xl bg-primary/20 flex items-center justify-center text-lg font-bold text-primary">

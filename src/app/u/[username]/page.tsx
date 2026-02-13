@@ -39,11 +39,11 @@ export default async function ProfilePage({
     .where(eq(userGame.userId, dbUser.id));
 
   const categoryDefs = [
-    { id: "finished", label: "Finished", emoji: "✅" },
-    { id: "playing", label: "Playing", emoji: "🎮" },
-    { id: "want-to-play", label: "Want to Play", emoji: "📋" },
-    { id: "on-hold", label: "On Hold", emoji: "⏸️" },
-    { id: "dropped", label: "Dropped", emoji: "🚫" },
+    { id: "finished", label: "Finished" },
+    { id: "playing", label: "Playing" },
+    { id: "want-to-play", label: "Want to Play" },
+    { id: "on-hold", label: "On Hold" },
+    { id: "dropped", label: "Dropped" },
   ];
 
   const categories = categoryDefs

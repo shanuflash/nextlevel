@@ -8,7 +8,7 @@ import {
   CATEGORIES,
   CATEGORY_TAB_COLORS,
   CATEGORY_BADGE_COLORS,
-  BLUR_DATA_URL,
+
 } from "@/src/lib/constants";
 import { updateGame, removeGame } from "@/src/app/dashboard/games/actions";
 import { toast } from "sonner";
@@ -27,7 +27,6 @@ interface GameItem {
 interface Category {
   id: string;
   label: string;
-  emoji: string;
   games: GameItem[];
 }
 
@@ -61,7 +60,7 @@ function GameModal({
   isOwner,
   onClose,
 }: {
-  game: GameItem & { categoryId: string; categoryLabel: string; categoryEmoji: string };
+  game: GameItem & { categoryId: string; categoryLabel: string };
   isOwner: boolean;
   onClose: () => void;
 }) {
@@ -113,8 +112,6 @@ function GameModal({
               fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 448px"
-              placeholder="blur"
-              blurDataURL={BLUR_DATA_URL}
             />
           ) : (
             <div className="size-full flex items-center justify-center text-5xl text-white/10">
@@ -149,7 +146,7 @@ function GameModal({
                     "bg-white/10 text-white/60 border-white/20"
                   }`}
                 >
-                  {game.categoryEmoji} {game.categoryLabel}
+                  {game.categoryLabel}
                 </span>
               )}
               {game.rating && (
@@ -182,7 +179,7 @@ function GameModal({
                           : "border-white/8 text-white/40 hover:text-white/60"
                       }`}
                     >
-                      {c.emoji} {c.label}
+                      {c.label}
                     </button>
                   ))}
                 </div>
@@ -268,8 +265,6 @@ function BentoHeader({ profile }: { profile: ProfileData }) {
           width={96}
           height={96}
           className="size-24 rounded-2xl bg-white/10 ring-2 ring-white/10"
-          placeholder="blur"
-          blurDataURL={BLUR_DATA_URL}
         />
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
@@ -326,7 +321,7 @@ export function ProfileView({
 }) {
   const [activeCategory, setActiveCategory] = useState<string | "all">("all");
   const [selectedGame, setSelectedGame] = useState<
-    (GameItem & { categoryId: string; categoryLabel: string; categoryEmoji: string }) | null
+    (GameItem & { categoryId: string; categoryLabel: string }) | null
   >(null);
 
   const filteredGames =
@@ -336,7 +331,6 @@ export function ProfileView({
             ...g,
             categoryId: cat.id,
             categoryLabel: cat.label,
-            categoryEmoji: cat.emoji,
           })),
         )
       : (profile.categories
@@ -346,9 +340,6 @@ export function ProfileView({
             categoryId: activeCategory,
             categoryLabel:
               profile.categories.find((c) => c.id === activeCategory)?.label ??
-              "",
-            categoryEmoji:
-              profile.categories.find((c) => c.id === activeCategory)?.emoji ??
               "",
           })) ?? []);
 
@@ -383,7 +374,7 @@ export function ProfileView({
                   : "bg-transparent text-white/40 border-white/8 hover:text-white/60 hover:border-white/15"
               }`}
             >
-              {cat.emoji} {cat.label}
+              {cat.label}
               <span className="ml-2 text-xs opacity-60">
                 {cat.games.length}
               </span>
@@ -417,8 +408,6 @@ export function ProfileView({
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                       sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                      placeholder="blur"
-                      blurDataURL={BLUR_DATA_URL}
                     />
                   ) : (
                     <div className="size-full flex items-center justify-center text-3xl text-white/10 bg-white/5">
@@ -432,7 +421,7 @@ export function ProfileView({
                         "bg-white/10 text-white/60 border-white/20"
                       }`}
                     >
-                      {g.categoryEmoji} {g.categoryLabel}
+                      {g.categoryLabel}
                     </div>
                   )}
                   {g.rating && (

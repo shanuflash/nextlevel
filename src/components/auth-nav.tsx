@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/src/lib/auth-client";
-import { BLUR_DATA_URL } from "@/src/lib/constants";
+
 
 interface AuthNavUser {
   id: string;
@@ -76,8 +76,6 @@ export function AuthNav({ user }: { user: AuthNavUser }) {
                 width={28}
                 height={28}
                 className="size-7 rounded-full ring-1 ring-white/10"
-                placeholder="blur"
-                blurDataURL={BLUR_DATA_URL}
               />
             ) : (
               <div className="size-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">

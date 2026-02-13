@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { addGame, updateGame, removeGame, bulkAddGames } from "./actions";
 import { igdbCover, type IGDBGameMeta } from "@/src/lib/igdb";
-import { CATEGORIES, BLUR_DATA_URL } from "@/src/lib/constants";
+import { CATEGORIES } from "@/src/lib/constants";
 import { toast } from "sonner";
 
 export interface UserGameRow {
@@ -142,8 +142,6 @@ function AddGameDialog({
                                 fill
                                 className="object-cover"
                                 sizes="40px"
-                                placeholder="blur"
-                                blurDataURL={BLUR_DATA_URL}
                               />
                             ) : (
                               <div className="size-full flex items-center justify-center text-white/10 text-xs">
@@ -199,8 +197,6 @@ function AddGameDialog({
                       fill
                       className="object-cover"
                       sizes="64px"
-                      placeholder="blur"
-                      blurDataURL={BLUR_DATA_URL}
                     />
                   ) : (
                     <div className="size-full flex items-center justify-center text-2xl text-white/10">
@@ -247,7 +243,7 @@ function AddGameDialog({
                           : "border-white/8 text-white/40 hover:text-white/60"
                       }`}
                     >
-                      {c.emoji} {c.label}
+                      {c.label}
                     </button>
                   ))}
                 </div>
@@ -476,7 +472,7 @@ function BulkAddDialog({
                       : "border-white/8 text-white/40 hover:text-white/60"
                   }`}
                 >
-                  {c.emoji} {c.label}
+                  {c.label}
                 </button>
               ))}
             </div>
@@ -524,8 +520,6 @@ function BulkAddDialog({
                             fill
                             className="object-cover"
                             sizes="40px"
-                            placeholder="blur"
-                            blurDataURL={BLUR_DATA_URL}
                           />
                         ) : (
                           <div className="size-full flex items-center justify-center text-white/10 text-xs">
@@ -652,8 +646,6 @@ function EditGameDialog({
               fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 448px"
-              placeholder="blur"
-              blurDataURL={BLUR_DATA_URL}
             />
           ) : (
             <div className="size-full flex items-center justify-center text-5xl text-white/10">
@@ -685,7 +677,7 @@ function EditGameDialog({
                 <span
                   className={`text-xs font-medium px-2.5 py-1 rounded-lg border ${cat.bg} ${cat.color}`}
                 >
-                  {cat.emoji} {cat.label}
+                  {cat.label}
                 </span>
               )}
               {game.rating && (
@@ -718,7 +710,7 @@ function EditGameDialog({
                           : "border-white/8 text-white/40 hover:text-white/60"
                       }`}
                     >
-                      {c.emoji} {c.label}
+                      {c.label}
                     </button>
                   ))}
                 </div>
@@ -851,7 +843,7 @@ export function GamesClient({ games }: { games: UserGameRow[] }) {
                   : "text-white/40 border-white/8 hover:text-white/60"
               }`}
             >
-              {cat.emoji} {cat.label} ({catCount})
+              {cat.label} ({catCount})
             </button>
           );
         })}
@@ -885,8 +877,6 @@ export function GamesClient({ games }: { games: UserGameRow[] }) {
                       fill
                       className="object-cover"
                       sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
-                      placeholder="blur"
-                      blurDataURL={BLUR_DATA_URL}
                     />
                   ) : (
                     <div className="size-full flex items-center justify-center text-3xl text-white/10">
@@ -904,7 +894,7 @@ export function GamesClient({ games }: { games: UserGameRow[] }) {
                     </p>
                     {cat && (
                       <p className={`text-[10px] mt-0.5 ${cat.color}`}>
-                        {cat.emoji} {cat.label}
+                        {cat.label}
                       </p>
                     )}
                   </div>

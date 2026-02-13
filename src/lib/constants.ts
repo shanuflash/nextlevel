@@ -1,7 +1,6 @@
 export interface CategoryDef {
   id: string;
   label: string;
-  emoji: string;
   color: string;
   bg: string;
   bar: string;
@@ -11,7 +10,6 @@ export const CATEGORIES: CategoryDef[] = [
   {
     id: "finished",
     label: "Finished",
-    emoji: "✅",
     color: "text-emerald-400",
     bg: "bg-emerald-500/15 border-emerald-500/25",
     bar: "bg-emerald-500",
@@ -19,7 +17,6 @@ export const CATEGORIES: CategoryDef[] = [
   {
     id: "playing",
     label: "Playing",
-    emoji: "🎮",
     color: "text-blue-400",
     bg: "bg-blue-500/15 border-blue-500/25",
     bar: "bg-blue-500",
@@ -27,7 +24,6 @@ export const CATEGORIES: CategoryDef[] = [
   {
     id: "want-to-play",
     label: "Want to Play",
-    emoji: "📋",
     color: "text-amber-400",
     bg: "bg-amber-500/15 border-amber-500/25",
     bar: "bg-amber-500",
@@ -35,7 +31,6 @@ export const CATEGORIES: CategoryDef[] = [
   {
     id: "on-hold",
     label: "On Hold",
-    emoji: "⏸️",
     color: "text-orange-400",
     bg: "bg-orange-500/15 border-orange-500/25",
     bar: "bg-orange-500",
@@ -43,7 +38,6 @@ export const CATEGORIES: CategoryDef[] = [
   {
     id: "dropped",
     label: "Dropped",
-    emoji: "🚫",
     color: "text-red-400",
     bg: "bg-red-500/15 border-red-500/25",
     bar: "bg-red-500",
@@ -72,7 +66,3 @@ export type GameCategory =
   | "want-to-play"
   | "on-hold"
   | "dropped";
-
-/** Tiny 1x1 dark pixel for next/image blur placeholder on remote images */
-export const BLUR_DATA_URL =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";

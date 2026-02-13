@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { updateProfile } from "./actions";
-import { BLUR_DATA_URL } from "@/src/lib/constants";
+
 
 interface UserData {
   name: string;
@@ -61,8 +61,6 @@ export function SettingsClient({ user }: { user: UserData }) {
                 width={64}
                 height={64}
                 className="size-16 rounded-2xl ring-2 ring-white/10"
-                placeholder="blur"
-                blurDataURL={BLUR_DATA_URL}
               />
             ) : (
               <div className="size-16 rounded-2xl bg-primary/20 flex items-center justify-center text-2xl font-bold text-primary">

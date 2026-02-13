@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { fetchIGDBGame, igdbCover } from "@/src/lib/igdb";
-import { BLUR_DATA_URL } from "@/src/lib/constants";
+
 import { PublicNav } from "@/src/components/public-nav";
 import { CATEGORIES } from "@/src/lib/constants";
 
@@ -99,8 +99,6 @@ export default async function GameDetailPage({
                   fill
                   className="object-cover"
                   sizes="192px"
-                  placeholder="blur"
-                  blurDataURL={BLUR_DATA_URL}
                 />
               ) : (
                 <div className="size-full flex items-center justify-center text-4xl text-white/10">
@@ -174,7 +172,7 @@ export default async function GameDetailPage({
                   return (
                     <div key={cat.id} className="flex items-center gap-3">
                       <span className="text-sm w-28 flex-none">
-                        {cat.emoji} {cat.label}
+                        {cat.label}
                       </span>
                       <div className="flex-1 h-2 rounded-full bg-white/8 overflow-hidden">
                         <div
@@ -215,8 +213,6 @@ export default async function GameDetailPage({
                           width={32}
                           height={32}
                           className="size-8 rounded-lg ring-1 ring-white/10"
-                          placeholder="blur"
-                          blurDataURL={BLUR_DATA_URL}
                         />
                       ) : (
                         <div className="size-8 rounded-lg bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
@@ -228,7 +224,7 @@ export default async function GameDetailPage({
                       </div>
                       {cat && (
                         <span className={`text-[10px] ${cat.color}`}>
-                          {cat.emoji}
+                          {cat.label}
                         </span>
                       )}
                       {u.rating && (
