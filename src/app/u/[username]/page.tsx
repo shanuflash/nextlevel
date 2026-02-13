@@ -29,6 +29,7 @@ export async function generateMetadata({
   const total = gameCount?.count ?? 0;
   const title = `@${dbUser.username}'s catalog`;
   const description = dbUser.bio || `${total} games tracked on NextLevel.`;
+  const ogImage = `/u/${encodeURIComponent(username)}/opengraph-image`;
 
   return {
     title,
@@ -36,6 +37,20 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: `${dbUser.name} on NextLevel`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
     },
   };
 }

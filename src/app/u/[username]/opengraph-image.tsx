@@ -7,23 +7,58 @@ export const alt = "NextLevel Profile";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return new Promise((resolve) => {
+    const t = setTimeout(() => resolve(null), ms);
+    promise
+      .then((v) => resolve(v))
+      .catch(() => resolve(null))
+      .finally(() => clearTimeout(t));
+  });
+}
+
+function safeUsername(input: string) {
+  const u = (input || "").trim();
+  return u.length > 32 ? `${u.slice(0, 32)}…` : u;
+}
+
 export default async function ProfileOG({
   params,
 }: {
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
+  const u = safeUsername(username);
 
-  const users = await ogQuery<{
+  type ProfileRow = {
     id: string;
     name: string;
     username: string | null;
     bio: string | null;
-  }>("SELECT id, name, username, bio FROM user WHERE username = ? LIMIT 1", [
-    username,
-  ]);
+    total: number;
+    finished: number;
+    playing: number;
+  };
 
-  const dbUser = users[0];
+  const dbUser = await withTimeout(
+    ogQuery<ProfileRow>(
+      `
+      SELECT
+        u.id,
+        u.name,
+        u.username,
+        u.bio,
+        (SELECT COUNT(*) FROM user_game ug WHERE ug.user_id = u.id) AS total,
+        (SELECT COUNT(*) FROM user_game ug WHERE ug.user_id = u.id AND ug.category = 'finished') AS finished,
+        (SELECT COUNT(*) FROM user_game ug WHERE ug.user_id = u.id AND ug.category = 'playing') AS playing
+      FROM "user" u
+      WHERE u.username = ?
+      LIMIT 1
+      `,
+      [username]
+    ).then((rows) => rows[0] ?? null),
+    900
+  );
 
   if (!dbUser) {
     return new ImageResponse(
@@ -32,53 +67,37 @@ export default async function ProfileOG({
           width: "100%",
           height: "100%",
           display: "flex",
+          flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
           backgroundColor: "#09090d",
-          color: "rgba(255,255,255,0.3)",
-          fontSize: 32,
+          color: "rgba(255,255,255,0.85)",
+          fontSize: 44,
           fontFamily: "sans-serif",
+          gap: 12,
         }}
       >
-        User not found
+        <div style={{ display: "flex", gap: 0 }}>
+          <span style={{ fontWeight: 800 }}>Next</span>
+          <span style={{ fontWeight: 800, color: "#d946a8" }}>Level</span>
+        </div>
+        <div style={{ fontSize: 30, color: "rgba(255,255,255,0.45)" }}>
+          @{u}
+        </div>
       </div>,
-      { ...size }
+      {
+        ...size,
+        headers: {
+          "Cache-Control":
+            "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
+        },
+      }
     );
   }
 
-  const [totalRow, finishedRow, playingRow, currentlyPlaying, bgGames] =
-    await Promise.all([
-      ogQuery<{ c: number }>(
-        "SELECT COUNT(*) as c FROM user_game WHERE user_id = ?",
-        [dbUser.id]
-      ),
-      ogQuery<{ c: number }>(
-        "SELECT COUNT(*) as c FROM user_game WHERE user_id = ? AND category = 'finished'",
-        [dbUser.id]
-      ),
-      ogQuery<{ c: number }>(
-        "SELECT COUNT(*) as c FROM user_game WHERE user_id = ? AND category = 'playing'",
-        [dbUser.id]
-      ),
-      ogQuery<{ title: string; cover_image_id: string | null }>(
-        `SELECT g.title, g.cover_image_id FROM user_game ug
-         INNER JOIN game g ON ug.game_id = g.id
-         WHERE ug.user_id = ? AND ug.category = 'playing'
-         ORDER BY g.popularity DESC LIMIT 5`,
-        [dbUser.id]
-      ),
-      ogQuery<{ cover_image_id: string | null }>(
-        `SELECT g.cover_image_id FROM user_game ug
-         INNER JOIN game g ON ug.game_id = g.id
-         WHERE ug.user_id = ?
-         ORDER BY g.popularity DESC LIMIT 8`,
-        [dbUser.id]
-      ),
-    ]);
-
-  const total = totalRow[0]?.c ?? 0;
-  const finished = finishedRow[0]?.c ?? 0;
-  const playing = playingRow[0]?.c ?? 0;
+  const total = dbUser.total ?? 0;
+  const finished = dbUser.finished ?? 0;
+  const playing = dbUser.playing ?? 0;
 
   return new ImageResponse(
     <div
@@ -92,33 +111,61 @@ export default async function ProfileOG({
         overflow: "hidden",
       }}
     >
+      {/* Decorative card shapes — matches root OG */}
       <div
         style={{
           position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
+          inset: 0,
           display: "flex",
-          flexWrap: "wrap",
-          opacity: 0.08,
+          opacity: 0.18,
         }}
       >
-        {bgGames.map((g, i) =>
-          g.cover_image_id ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={i}
-              src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover_image_id}.jpg`}
-              alt=""
-              width={300}
-              height={400}
-              style={{ objectFit: "cover", width: 300, height: 315 }}
-            />
-          ) : null
-        )}
+        <div
+          style={{
+            position: "absolute",
+            top: -120,
+            left: -80,
+            width: 520,
+            height: 760,
+            borderRadius: 44,
+            background:
+              "linear-gradient(135deg, rgba(217,70,168,0.35), rgba(99,60,255,0.18))",
+            transform: "rotate(-12deg)",
+            filter: "blur(0.2px)",
+            display: "flex",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: -40,
+            right: -120,
+            width: 560,
+            height: 820,
+            borderRadius: 52,
+            background:
+              "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.03))",
+            transform: "rotate(14deg)",
+            display: "flex",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: -160,
+            left: 260,
+            width: 600,
+            height: 860,
+            borderRadius: 56,
+            background:
+              "linear-gradient(135deg, rgba(99,60,255,0.22), rgba(217,70,168,0.12))",
+            transform: "rotate(6deg)",
+            display: "flex",
+          }}
+        />
       </div>
 
+      {/* Gradient overlays — matches root OG */}
       <div
         style={{
           position: "absolute",
@@ -167,6 +214,7 @@ export default async function ProfileOG({
         }}
       />
 
+      {/* Content — bottom-left, same layout rhythm as root OG */}
       <div
         style={{
           position: "relative",
@@ -179,6 +227,7 @@ export default async function ProfileOG({
           gap: "20px",
         }}
       >
+        {/* Accent bar */}
         <div
           style={{
             width: 60,
@@ -191,6 +240,7 @@ export default async function ProfileOG({
           }}
         />
 
+        {/* Avatar + name row */}
         <div
           style={{
             display: "flex",
@@ -227,25 +277,27 @@ export default async function ProfileOG({
               {dbUser.name}
             </span>
             <span style={{ fontSize: 22, color: "rgba(255,255,255,0.35)" }}>
-              @{dbUser.username}
+              @{dbUser.username ?? u}
             </span>
           </div>
         </div>
 
-        <div
-          style={{
-            fontSize: 30,
-            color: "rgba(255,255,255,0.45)",
-            letterSpacing: "-0.01em",
-            lineHeight: 1.4,
-            maxWidth: 600,
-          }}
-        >
-          {dbUser.bio
-            ? dbUser.bio.slice(0, 100)
-            : "Track, organize, and share your gaming journey."}
-        </div>
+        {/* Bio (only if user has one) */}
+        {dbUser.bio && (
+          <div
+            style={{
+              fontSize: 30,
+              color: "rgba(255,255,255,0.45)",
+              letterSpacing: "-0.01em",
+              lineHeight: 1.4,
+              maxWidth: 600,
+            }}
+          >
+            {dbUser.bio.slice(0, 100)}
+          </div>
+        )}
 
+        {/* Stat pills */}
         <div
           style={{
             display: "flex",
@@ -280,61 +332,48 @@ export default async function ProfileOG({
         </div>
       </div>
 
-      {currentlyPlaying.length > 0 && (
+      {/* Branding — top-right, bigger */}
+      <div
+        style={{
+          position: "absolute",
+          top: 44,
+          right: 60,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          gap: 6,
+        }}
+      >
         <div
           style={{
-            position: "absolute",
-            right: 60,
-            top: "50%",
-            transform: "translateY(-50%)",
             display: "flex",
-            gap: "10px",
             alignItems: "center",
+            gap: 4,
+            fontSize: 32,
+            fontWeight: 700,
+            letterSpacing: "-0.025em",
           }}
         >
-          {currentlyPlaying.map((g, i) => {
-            const mid = Math.floor(currentlyPlaying.length / 2);
-            const isCenter = currentlyPlaying.length >= 3 && i === mid;
-            return (
-              <div
-                key={i}
-                style={{
-                  width: 105,
-                  height: 140,
-                  borderRadius: 14,
-                  overflow: "hidden",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  display: "flex",
-                  transform: isCenter
-                    ? "translateY(-16px) scale(1.05)"
-                    : "translateY(0)",
-                  boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
-                }}
-              >
-                {g.cover_image_id ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover_image_id}.jpg`}
-                    alt=""
-                    width={105}
-                    height={140}
-                    style={{ objectFit: "cover", width: 105, height: 140 }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: 105,
-                      height: 140,
-                      backgroundColor: "rgba(255,255,255,0.05)",
-                    }}
-                  />
-                )}
-              </div>
-            );
-          })}
+          <span style={{ color: "#ffffff" }}>Next</span>
+          <span style={{ color: "#d946a8" }}>Level</span>
         </div>
-      )}
+        <div
+          style={{
+            fontSize: 18,
+            color: "rgba(255,255,255,0.35)",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          Track, organize, and share your gaming journey.
+        </div>
+      </div>
     </div>,
-    { ...size }
+    {
+      ...size,
+      headers: {
+        "Cache-Control":
+          "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
+      },
+    }
   );
 }

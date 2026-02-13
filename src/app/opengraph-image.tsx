@@ -1,20 +1,12 @@
 import { ImageResponse } from "@vercel/og";
-import { ogQuery } from "@/src/lib/og-db";
 
 export const runtime = "edge";
-export const revalidate = 86400; // 24 hours
+export const revalidate = 604800; // 7 days
 export const alt = "NextLevel — Your Gaming Catalog";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function OGImage() {
-  const featuredGames = await ogQuery<{
-    cover_image_id: string | null;
-    title: string;
-  }>(
-    "SELECT cover_image_id, title FROM game WHERE is_featured_released = 1 ORDER BY popularity DESC LIMIT 8"
-  );
-
   return new ImageResponse(
     <div
       style={{
@@ -27,31 +19,58 @@ export default async function OGImage() {
         overflow: "hidden",
       }}
     >
+      {/* Decorative "cards" background (no network fetches). */}
       <div
         style={{
           position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
+          inset: 0,
           display: "flex",
-          flexWrap: "wrap",
-          opacity: 0.08,
+          opacity: 0.18,
         }}
       >
-        {featuredGames.map((g, i) =>
-          g.cover_image_id ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={i}
-              src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover_image_id}.jpg`}
-              alt=""
-              width={300}
-              height={400}
-              style={{ objectFit: "cover", width: 300, height: 315 }}
-            />
-          ) : null
-        )}
+        <div
+          style={{
+            position: "absolute",
+            top: -120,
+            left: -80,
+            width: 520,
+            height: 760,
+            borderRadius: 44,
+            background:
+              "linear-gradient(135deg, rgba(217,70,168,0.35), rgba(99,60,255,0.18))",
+            transform: "rotate(-12deg)",
+            filter: "blur(0.2px)",
+            display: "flex",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: -40,
+            right: -120,
+            width: 560,
+            height: 820,
+            borderRadius: 52,
+            background:
+              "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.03))",
+            transform: "rotate(14deg)",
+            display: "flex",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: -160,
+            left: 260,
+            width: 600,
+            height: 860,
+            borderRadius: 56,
+            background:
+              "linear-gradient(135deg, rgba(99,60,255,0.22), rgba(217,70,168,0.12))",
+            transform: "rotate(6deg)",
+            display: "flex",
+          }}
+        />
       </div>
 
       <div
@@ -178,57 +197,14 @@ export default async function OGImage() {
           ))}
         </div>
       </div>
-
-      {featuredGames.length >= 3 && (
-        <div
-          style={{
-            position: "absolute",
-            right: 60,
-            top: "50%",
-            transform: "translateY(-50%)",
-            display: "flex",
-            gap: "14px",
-            alignItems: "center",
-          }}
-        >
-          {featuredGames.slice(0, 3).map((g, i) => (
-            <div
-              key={i}
-              style={{
-                width: 130,
-                height: 174,
-                borderRadius: 16,
-                overflow: "hidden",
-                border: "1px solid rgba(255,255,255,0.1)",
-                display: "flex",
-                transform:
-                  i === 1 ? "translateY(-20px) scale(1.05)" : "translateY(0)",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
-              }}
-            >
-              {g.cover_image_id ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover_image_id}.jpg`}
-                  alt=""
-                  width={130}
-                  height={174}
-                  style={{ objectFit: "cover", width: 130, height: 174 }}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: 130,
-                    height: 174,
-                    backgroundColor: "rgba(255,255,255,0.05)",
-                  }}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
     </div>,
-    { ...size }
+    {
+      ...size,
+      headers: {
+        // Cache at the edge; crawlers retry and benefit heavily.
+        "Cache-Control":
+          "public, max-age=0, s-maxage=604800, stale-while-revalidate=86400",
+      },
+    }
   );
 }
