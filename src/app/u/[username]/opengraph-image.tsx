@@ -5,6 +5,7 @@ import { userGame, game } from "@/schema/game-schema";
 import { eq, and, desc, count } from "drizzle-orm";
 
 export const runtime = "edge";
+export const revalidate = 3600;
 export const alt = "NextLevel Profile";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
