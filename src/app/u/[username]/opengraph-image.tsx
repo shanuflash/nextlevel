@@ -1,10 +1,8 @@
 import { ImageResponse } from "@vercel/og";
-import { db } from "@/src/lib/auth";
-import { user } from "@/schema/auth-schema";
-import { userGame, game } from "@/schema/game-schema";
-import { eq, and, desc, count } from "drizzle-orm";
+import { ogQuery } from "@/src/lib/og-db";
 
-export const revalidate = 3600;
+export const runtime = "edge";
+export const revalidate = 3600; // 1 hour
 export const alt = "NextLevel Profile";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -16,9 +14,16 @@ export default async function ProfileOG({
 }) {
   const { username } = await params;
 
-  const dbUser = await db.query.user.findFirst({
-    where: eq(user.username, username),
-  });
+  const users = await ogQuery<{
+    id: string;
+    name: string;
+    username: string | null;
+    bio: string | null;
+  }>("SELECT id, name, username, bio FROM user WHERE username = ? LIMIT 1", [
+    username,
+  ]);
+
+  const dbUser = users[0];
 
   if (!dbUser) {
     return new ImageResponse(
@@ -41,53 +46,39 @@ export default async function ProfileOG({
     );
   }
 
-  const [
-    [totalCount],
-    [finishedCount],
-    [playingCount],
-    currentlyPlaying,
-    bgGames,
-  ] = await Promise.all([
-    db
-      .select({ count: count() })
-      .from(userGame)
-      .where(eq(userGame.userId, dbUser.id)),
-    db
-      .select({ count: count() })
-      .from(userGame)
-      .where(
-        and(eq(userGame.userId, dbUser.id), eq(userGame.category, "finished"))
+  const [totalRow, finishedRow, playingRow, currentlyPlaying, bgGames] =
+    await Promise.all([
+      ogQuery<{ c: number }>(
+        "SELECT COUNT(*) as c FROM user_game WHERE user_id = ?",
+        [dbUser.id]
       ),
-    db
-      .select({ count: count() })
-      .from(userGame)
-      .where(
-        and(eq(userGame.userId, dbUser.id), eq(userGame.category, "playing"))
+      ogQuery<{ c: number }>(
+        "SELECT COUNT(*) as c FROM user_game WHERE user_id = ? AND category = 'finished'",
+        [dbUser.id]
       ),
-    db
-      .select({
-        title: game.title,
-        coverImageId: game.coverImageId,
-      })
-      .from(userGame)
-      .innerJoin(game, eq(userGame.gameId, game.id))
-      .where(
-        and(eq(userGame.userId, dbUser.id), eq(userGame.category, "playing"))
-      )
-      .orderBy(desc(game.popularity))
-      .limit(5),
-    db
-      .select({ coverImageId: game.coverImageId })
-      .from(userGame)
-      .innerJoin(game, eq(userGame.gameId, game.id))
-      .where(eq(userGame.userId, dbUser.id))
-      .orderBy(desc(game.popularity))
-      .limit(8),
-  ]);
+      ogQuery<{ c: number }>(
+        "SELECT COUNT(*) as c FROM user_game WHERE user_id = ? AND category = 'playing'",
+        [dbUser.id]
+      ),
+      ogQuery<{ title: string; cover_image_id: string | null }>(
+        `SELECT g.title, g.cover_image_id FROM user_game ug
+         INNER JOIN game g ON ug.game_id = g.id
+         WHERE ug.user_id = ? AND ug.category = 'playing'
+         ORDER BY g.popularity DESC LIMIT 5`,
+        [dbUser.id]
+      ),
+      ogQuery<{ cover_image_id: string | null }>(
+        `SELECT g.cover_image_id FROM user_game ug
+         INNER JOIN game g ON ug.game_id = g.id
+         WHERE ug.user_id = ?
+         ORDER BY g.popularity DESC LIMIT 8`,
+        [dbUser.id]
+      ),
+    ]);
 
-  const total = totalCount?.count ?? 0;
-  const finished = finishedCount?.count ?? 0;
-  const playing = playingCount?.count ?? 0;
+  const total = totalRow[0]?.c ?? 0;
+  const finished = finishedRow[0]?.c ?? 0;
+  const playing = playingRow[0]?.c ?? 0;
 
   return new ImageResponse(
     <div
@@ -101,7 +92,6 @@ export default async function ProfileOG({
         overflow: "hidden",
       }}
     >
-      {/* Background game cover collage — faded */}
       <div
         style={{
           position: "absolute",
@@ -115,11 +105,11 @@ export default async function ProfileOG({
         }}
       >
         {bgGames.map((g, i) =>
-          g.coverImageId ? (
+          g.cover_image_id ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               key={i}
-              src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${g.coverImageId}.jpg`}
+              src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover_image_id}.jpg`}
               alt=""
               width={300}
               height={400}
@@ -129,7 +119,6 @@ export default async function ProfileOG({
         )}
       </div>
 
-      {/* Gradient overlays for depth */}
       <div
         style={{
           position: "absolute",
@@ -154,7 +143,6 @@ export default async function ProfileOG({
           display: "flex",
         }}
       />
-      {/* Bottom fade for clean text area */}
       <div
         style={{
           position: "absolute",
@@ -166,7 +154,6 @@ export default async function ProfileOG({
           display: "flex",
         }}
       />
-      {/* Top fade */}
       <div
         style={{
           position: "absolute",
@@ -180,7 +167,6 @@ export default async function ProfileOG({
         }}
       />
 
-      {/* Main content */}
       <div
         style={{
           position: "relative",
@@ -193,7 +179,6 @@ export default async function ProfileOG({
           gap: "20px",
         }}
       >
-        {/* Decorative accent line */}
         <div
           style={{
             width: 60,
@@ -206,7 +191,6 @@ export default async function ProfileOG({
           }}
         />
 
-        {/* User identity — replaces the logo */}
         <div
           style={{
             display: "flex",
@@ -248,7 +232,6 @@ export default async function ProfileOG({
           </div>
         </div>
 
-        {/* Bio — replaces the tagline */}
         <div
           style={{
             fontSize: 30,
@@ -263,7 +246,6 @@ export default async function ProfileOG({
             : "Track, organize, and share your gaming journey."}
         </div>
 
-        {/* Stats pills — replaces the feature pills */}
         <div
           style={{
             display: "flex",
@@ -298,7 +280,6 @@ export default async function ProfileOG({
         </div>
       </div>
 
-      {/* Floating currently-playing covers on the right */}
       {currentlyPlaying.length > 0 && (
         <div
           style={{
@@ -330,10 +311,10 @@ export default async function ProfileOG({
                   boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
                 }}
               >
-                {g.coverImageId ? (
+                {g.cover_image_id ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${g.coverImageId}.jpg`}
+                    src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover_image_id}.jpg`}
                     alt=""
                     width={105}
                     height={140}

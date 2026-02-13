@@ -1,21 +1,19 @@
 import { ImageResponse } from "@vercel/og";
-import { db } from "@/src/lib/auth";
-import { game } from "@/schema/game-schema";
-import { desc, eq } from "drizzle-orm";
+import { ogQuery } from "@/src/lib/og-db";
 
-export const revalidate = 86400;
+export const runtime = "edge";
+export const revalidate = 86400; // 24 hours
 export const alt = "NextLevel — Your Gaming Catalog";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function OGImage() {
-  // Grab a few popular game covers for the background collage
-  const featuredGames = await db
-    .select({ coverImageId: game.coverImageId, title: game.title })
-    .from(game)
-    .where(eq(game.isFeaturedReleased, true))
-    .orderBy(desc(game.popularity))
-    .limit(8);
+  const featuredGames = await ogQuery<{
+    cover_image_id: string | null;
+    title: string;
+  }>(
+    "SELECT cover_image_id, title FROM game WHERE is_featured_released = 1 ORDER BY popularity DESC LIMIT 8"
+  );
 
   return new ImageResponse(
     <div
@@ -29,7 +27,6 @@ export default async function OGImage() {
         overflow: "hidden",
       }}
     >
-      {/* Background game cover collage — faded */}
       <div
         style={{
           position: "absolute",
@@ -43,11 +40,11 @@ export default async function OGImage() {
         }}
       >
         {featuredGames.map((g, i) =>
-          g.coverImageId ? (
+          g.cover_image_id ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               key={i}
-              src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${g.coverImageId}.jpg`}
+              src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover_image_id}.jpg`}
               alt=""
               width={300}
               height={400}
@@ -57,7 +54,6 @@ export default async function OGImage() {
         )}
       </div>
 
-      {/* Gradient overlays for depth */}
       <div
         style={{
           position: "absolute",
@@ -82,7 +78,6 @@ export default async function OGImage() {
           display: "flex",
         }}
       />
-      {/* Bottom fade for clean text area */}
       <div
         style={{
           position: "absolute",
@@ -94,7 +89,6 @@ export default async function OGImage() {
           display: "flex",
         }}
       />
-      {/* Top fade */}
       <div
         style={{
           position: "absolute",
@@ -108,7 +102,6 @@ export default async function OGImage() {
         }}
       />
 
-      {/* Main content */}
       <div
         style={{
           position: "relative",
@@ -121,7 +114,6 @@ export default async function OGImage() {
           gap: "20px",
         }}
       >
-        {/* Decorative accent line */}
         <div
           style={{
             width: 60,
@@ -134,7 +126,6 @@ export default async function OGImage() {
           }}
         />
 
-        {/* Logo */}
         <div
           style={{
             fontSize: 80,
@@ -147,7 +138,6 @@ export default async function OGImage() {
           <span style={{ color: "#d946a8" }}>Level</span>
         </div>
 
-        {/* Tagline */}
         <div
           style={{
             fontSize: 30,
@@ -160,7 +150,6 @@ export default async function OGImage() {
           Track, organize, and share your gaming journey.
         </div>
 
-        {/* Feature pills */}
         <div
           style={{
             display: "flex",
@@ -190,7 +179,6 @@ export default async function OGImage() {
         </div>
       </div>
 
-      {/* Floating game covers on the right */}
       {featuredGames.length >= 3 && (
         <div
           style={{
@@ -218,10 +206,10 @@ export default async function OGImage() {
                 boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
               }}
             >
-              {g.coverImageId ? (
+              {g.cover_image_id ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${g.coverImageId}.jpg`}
+                  src={`https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover_image_id}.jpg`}
                   alt=""
                   width={130}
                   height={174}
