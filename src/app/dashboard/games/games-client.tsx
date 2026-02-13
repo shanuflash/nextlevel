@@ -36,6 +36,7 @@ function AddGameDialog({
   const [rating, setRating] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const abortRef = useRef<AbortController>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -49,16 +50,25 @@ function AddGameDialog({
       setHasSearched(false);
       return;
     }
+
+    // Cancel any in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setIsSearching(true);
     try {
-      const res = await fetch(`/api/igdb?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/igdb?q=${encodeURIComponent(q)}`, {
+        signal: controller.signal,
+      });
       const data = await res.json();
       if (Array.isArray(data)) setResults(data);
-    } catch {
-      /* noop */
-    } finally {
-      setIsSearching(false);
       setHasSearched(true);
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setHasSearched(true);
+    } finally {
+      if (!controller.signal.aborted) setIsSearching(false);
     }
   }, []);
 
@@ -315,6 +325,7 @@ function BulkAddDialog({
   const [defaultCategory, setDefaultCategory] = useState("finished");
   const [isAdding, setIsAdding] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const abortRef = useRef<AbortController>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -328,16 +339,25 @@ function BulkAddDialog({
       setHasSearched(false);
       return;
     }
+
+    // Cancel any in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setIsSearching(true);
     try {
-      const res = await fetch(`/api/igdb?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/igdb?q=${encodeURIComponent(q)}`, {
+        signal: controller.signal,
+      });
       const data = await res.json();
       if (Array.isArray(data)) setResults(data);
-    } catch {
-      /* noop */
-    } finally {
-      setIsSearching(false);
       setHasSearched(true);
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setHasSearched(true);
+    } finally {
+      if (!controller.signal.aborted) setIsSearching(false);
     }
   }, []);
 

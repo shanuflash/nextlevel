@@ -35,6 +35,40 @@ function mapResult(g: IGDBRawSearchResult): IGDBGameMeta {
 const FIELDS =
   "name, slug, cover.image_id, genres.name, platforms.abbreviation, first_release_date, summary, total_rating, total_rating_count";
 
+async function igdbFetch(
+  headers: Record<string, string>,
+  body: string,
+): Promise<IGDBRawSearchResult[]> {
+  const res = await fetch("https://api.igdb.com/v4/games", {
+    method: "POST",
+    headers,
+    body,
+  });
+
+  if (res.status === 401) {
+    // Token expired — clear cache and retry once with a fresh token
+    const freshToken = await getIGDBToken(true);
+    const retryHeaders = { ...headers, Authorization: `Bearer ${freshToken}` };
+    const retry = await fetch("https://api.igdb.com/v4/games", {
+      method: "POST",
+      headers: retryHeaders,
+      body,
+    });
+    if (!retry.ok) {
+      console.error("IGDB retry failed:", retry.status, await retry.text());
+      return [];
+    }
+    return retry.json();
+  }
+
+  if (!res.ok) {
+    console.error("IGDB error:", res.status, await res.text());
+    return [];
+  }
+
+  return res.json();
+}
+
 export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get("q");
   if (!query || query.length < 1) return NextResponse.json([]);
@@ -51,38 +85,21 @@ export async function GET(req: NextRequest) {
     const isNumeric = /^\d+$/.test(query.trim());
 
     // Always do a text search
-    const textRes = await fetch("https://api.igdb.com/v4/games", {
-      method: "POST",
+    const games = await igdbFetch(
       headers,
-      body: `fields ${FIELDS};\nwhere name ~ *"${escaped}"*;\nsort total_rating_count desc;\nlimit 10;`,
-    });
-
-    if (!textRes.ok) {
-      const text = await textRes.text();
-      console.error("IGDB error:", textRes.status, text);
-      return NextResponse.json(
-        { error: "IGDB request failed" },
-        { status: 502 },
-      );
-    }
-
-    const games: IGDBRawSearchResult[] = await textRes.json();
+      `fields ${FIELDS};\nwhere name ~ *"${escaped}"*;\nsort total_rating_count desc;\nlimit 10;`,
+    );
 
     // If the query is numeric, also try an ID lookup and prepend it
     if (isNumeric) {
-      const idRes = await fetch("https://api.igdb.com/v4/games", {
-        method: "POST",
+      const idGames = await igdbFetch(
         headers,
-        body: `fields ${FIELDS};\nwhere id = ${query.trim()};\nlimit 1;`,
-      });
-      if (idRes.ok) {
-        const idGames: IGDBRawSearchResult[] = await idRes.json();
-        // Prepend ID match, avoiding duplicates
-        const existingIds = new Set(games.map((g) => g.id));
-        for (const g of idGames) {
-          if (!existingIds.has(g.id)) {
-            games.unshift(g);
-          }
+        `fields ${FIELDS};\nwhere id = ${query.trim()};\nlimit 1;`,
+      );
+      const existingIds = new Set(games.map((g) => g.id));
+      for (const g of idGames) {
+        if (!existingIds.has(g.id)) {
+          games.unshift(g);
         }
       }
     }
