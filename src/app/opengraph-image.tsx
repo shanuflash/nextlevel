@@ -3,7 +3,6 @@ import { db } from "@/src/lib/auth";
 import { game } from "@/schema/game-schema";
 import { desc, eq } from "drizzle-orm";
 
-export const runtime = "edge";
 export const revalidate = 86400;
 export const alt = "NextLevel — Your Gaming Catalog";
 export const size = { width: 1200, height: 630 };
