@@ -43,7 +43,7 @@ export default async function LandingPage() {
         </p>
         <div className="flex items-center justify-center gap-4 mt-10">
           <Link
-            href="/login"
+            href="/signup"
             className="px-6 py-3 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
           >
             Get Started

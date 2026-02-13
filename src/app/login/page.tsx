@@ -1,19 +1,62 @@
 "use client";
 
-import { signIn } from "@/src/lib/auth-client";
+import { signIn, useSession } from "@/src/lib/auth-client";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { data: session, isPending: sessionLoading } = useSession();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+
+  const anyLoading = isLoading || isGoogleLoading;
+
+  useEffect(() => {
+    if (session && !sessionLoading) {
+      router.replace("/dashboard");
+    }
+  }, [session, sessionLoading, router]);
+
+  async function handleUsernameSignIn(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    const { error } = await signIn.username({
+      username,
+      password,
+    });
+
+    if (error) {
+      setError(error.message || "Invalid username or password");
+      setIsLoading(false);
+    } else {
+      router.push("/dashboard");
+    }
+  }
 
   async function handleGoogleSignIn() {
-    setIsLoading(true);
-    await signIn.social({
-      provider: "google",
-      callbackURL: "/dashboard",
-    });
+    setError("");
+    setIsGoogleLoading(true);
+    try {
+      await signIn.social({
+        provider: "google",
+        callbackURL: "/dashboard",
+      });
+    } catch {
+      setError("Google sign-in failed. Please try again.");
+      setIsGoogleLoading(false);
+    }
   }
+
+  if (sessionLoading) return null;
+  if (session) return null;
 
   return (
     <div className="min-h-screen bg-[#09090d] text-white flex items-center justify-center px-6">
@@ -35,10 +78,90 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleUsernameSignIn} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="username" className="text-sm text-white/60">
+                Username
+              </label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Username"
+                required
+                disabled={anyLoading}
+                autoComplete="username"
+                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/25 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors disabled:opacity-50"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm text-white/60">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  required
+                  minLength={8}
+                  disabled={anyLoading}
+                  autoComplete="current-password"
+                  className="w-full px-4 py-3 pr-11 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/25 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                >
+                  {showPassword ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                      <path fillRule="evenodd" d="M3.28 2.22a.75.75 0 0 0-1.06 1.06l14.5 14.5a.75.75 0 1 0 1.06-1.06l-1.745-1.745a10.029 10.029 0 0 0 3.3-4.38 1.651 1.651 0 0 0 0-1.185A10.004 10.004 0 0 0 9.999 3a9.956 9.956 0 0 0-4.744 1.194L3.28 2.22ZM7.752 6.69l1.092 1.092a2.5 2.5 0 0 1 3.374 3.373l1.092 1.092a4 4 0 0 0-5.558-5.558Z" clipRule="evenodd" />
+                      <path d="m10.748 13.93 2.523 2.523a9.987 9.987 0 0 1-3.27.547c-4.258 0-7.894-2.66-9.337-6.41a1.651 1.651 0 0 1 0-1.186A10.007 10.007 0 0 1 4.09 5.12L6.38 7.41a4 4 0 0 0 4.368 6.52Z" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4">
+                      <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                      <path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={anyLoading}
+              className="w-full px-4 py-3 rounded-xl bg-primary text-white font-medium text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? "Signing in..." : "Sign in"}
+            </button>
+          </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/8" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-[#0f0f13] px-3 text-white/30">or</span>
+            </div>
+          </div>
+
           <button
             onClick={handleGoogleSignIn}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-2xl bg-white text-black font-medium text-sm hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={anyLoading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-medium text-sm hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="size-5" viewBox="0 0 24 24">
               <path
@@ -58,11 +181,17 @@ export default function LoginPage() {
                 fill="#EA4335"
               />
             </svg>
-            {isLoading ? "Signing in..." : "Continue with Google"}
+            {isGoogleLoading ? "Signing in..." : "Continue with Google"}
           </button>
 
-          <p className="text-center text-[11px] text-white/25">
-            By signing in, you agree to our Terms of Service and Privacy Policy.
+          <p className="text-center text-sm text-white/40">
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/signup"
+              className="text-primary hover:text-primary/80 transition-colors"
+            >
+              Sign up
+            </Link>
           </p>
         </div>
 

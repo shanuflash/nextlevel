@@ -75,9 +75,7 @@ export default async function ProfilePage({
     displayName: dbUser.name,
     username: dbUser.username || dbUser.id,
     bio: dbUser.bio || "",
-    avatarUrl:
-      dbUser.image ||
-      `https://api.dicebear.com/9.x/adventurer/svg?seed=${dbUser.username || dbUser.id}`,
+    avatarUrl: dbUser.image || null,
     totalGames: userGames.length,
     favoriteGenre: topGenre,
     joinedDate: joined,

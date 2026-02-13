@@ -1,6 +1,6 @@
 import { getSession } from "@/src/lib/session";
 import { db } from "@/src/lib/auth";
-import { user } from "@/schema/auth-schema";
+import { user, account } from "@/schema/auth-schema";
 import { eq } from "drizzle-orm";
 import { SettingsClient } from "./settings-client";
 
@@ -14,6 +14,16 @@ export default async function SettingsPage() {
 
   if (!dbUser) return null;
 
+  const accounts = await db
+    .select({ providerId: account.providerId, password: account.password })
+    .from(account)
+    .where(eq(account.userId, session.user.id));
+
+  const providers = accounts.map((a) => a.providerId);
+  const hasPassword = accounts.some(
+    (a) => a.providerId === "credential" && a.password
+  );
+
   return (
     <SettingsClient
       user={{
@@ -22,6 +32,8 @@ export default async function SettingsPage() {
         bio: dbUser.bio ?? "",
         email: dbUser.email,
         image: dbUser.image ?? undefined,
+        providers,
+        hasPassword,
       }}
     />
   );

@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
-import { admin } from "better-auth/plugins";
+import { admin, username } from "better-auth/plugins";
 
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { drizzle } from "drizzle-orm/libsql";
@@ -20,7 +20,11 @@ export const auth = betterAuth({
     provider: "sqlite",
     schema: authSchema,
   }),
-  plugins: [admin(), nextCookies()],
+  plugins: [admin(), username(), nextCookies()],
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 8,
+  },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,

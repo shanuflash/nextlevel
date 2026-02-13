@@ -1,10 +1,11 @@
 "use server";
 
-import { db } from "@/src/lib/auth";
+import { db, auth } from "@/src/lib/auth";
 import { user } from "@/schema/auth-schema";
 import { getSession } from "@/src/lib/session";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 
 export async function updateProfile(formData: FormData) {
   const session = await getSession();
@@ -36,10 +37,27 @@ export async function updateProfile(formData: FormData) {
     .set({
       name,
       username: username || null,
+      displayUsername: username || null,
       bio: bio || null,
     })
     .where(eq(user.id, session.user.id));
 
   revalidatePath("/dashboard/settings");
   revalidatePath("/dashboard");
+}
+
+export async function setNewPassword(newPassword: string) {
+  const session = await getSession();
+  if (!session) throw new Error("Not authenticated");
+
+  if (!newPassword || newPassword.length < 8) {
+    throw new Error("Password must be at least 8 characters");
+  }
+
+  await auth.api.setPassword({
+    body: { newPassword },
+    headers: await headers(),
+  });
+
+  revalidatePath("/dashboard/settings");
 }
