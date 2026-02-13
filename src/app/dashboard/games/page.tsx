@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { getSession } from "@/src/lib/session";
 import { db } from "@/src/lib/auth";
 import { userGame, game } from "@/schema/game-schema";
 import { eq } from "drizzle-orm";
 import { GamesClient } from "./games-client";
+
+export const metadata: Metadata = {
+  title: "My Games",
+};
 
 export default async function GamesPage() {
   const session = await getSession();

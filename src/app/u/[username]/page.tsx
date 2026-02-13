@@ -1,11 +1,44 @@
+import type { Metadata } from "next";
 import { db } from "@/src/lib/auth";
 import { user } from "@/schema/auth-schema";
 import { userGame, game } from "@/schema/game-schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, count } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { PublicNav } from "@/src/components/public-nav";
 import { ProfileView } from "./profile-view";
 import { getSession } from "@/src/lib/session";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.username, username),
+  });
+
+  if (!dbUser) return { title: "User Not Found" };
+
+  const [gameCount] = await db
+    .select({ count: count() })
+    .from(userGame)
+    .where(eq(userGame.userId, dbUser.id));
+
+  const total = gameCount?.count ?? 0;
+  const title = `@${dbUser.username}'s catalog`;
+  const description = dbUser.bio || `${total} games tracked on NextLevel.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+    },
+  };
+}
 
 export default async function ProfilePage({
   params,

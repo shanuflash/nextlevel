@@ -17,9 +17,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NextLevel — Your Gaming Catalog",
+  metadataBase: new URL("https://nextlevel.shanu.dev"),
+  title: {
+    default: "NextLevel",
+    template: "%s | NextLevel",
+  },
   description:
-    "Track your games, build your catalog, and share your gaming profile with the world.",
+    "Track your games, build your catalog, and share your profile.",
+  openGraph: {
+    type: "website",
+    siteName: "NextLevel",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({

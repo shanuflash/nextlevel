@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { db } from "@/src/lib/auth";
 import { game, userGame } from "@/schema/game-schema";
 import { user } from "@/schema/auth-schema";
@@ -9,6 +10,38 @@ import { fetchIGDBGame, igdbCover } from "@/src/lib/igdb";
 
 import { PublicNav } from "@/src/components/public-nav";
 import { CATEGORIES } from "@/src/lib/constants";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ igdbId: string }>;
+}): Promise<Metadata> {
+  const { igdbId: igdbIdStr } = await params;
+  const igdbId = parseInt(igdbIdStr, 10);
+  if (isNaN(igdbId)) return { title: "Game Not Found" };
+
+  const cached = await db.query.game.findFirst({
+    where: eq(game.igdbId, igdbId),
+  });
+
+  const title = cached?.title ?? "Game";
+  const description = cached?.summary
+    ? cached.summary.slice(0, 160)
+    : `View ${title} on NextLevel.`;
+  const cover = cached?.coverImageId
+    ? `https://images.igdb.com/igdb/image/upload/t_cover_big_2x/${cached.coverImageId}.jpg`
+    : undefined;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: cover ? [{ url: cover, width: 264, height: 374 }] : undefined,
+    },
+  };
+}
 
 interface CategoryStat {
   category: string;

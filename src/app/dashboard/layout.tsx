@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import { getSession } from "@/src/lib/session";
 import { redirect } from "next/navigation";
 import { db } from "@/src/lib/auth";
 import { user } from "@/schema/auth-schema";
 import { eq } from "drizzle-orm";
 import { DashboardShell } from "./shell";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+};
 
 export default async function DashboardLayout({
   children,

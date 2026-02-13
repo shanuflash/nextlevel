@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { getSession } from "@/src/lib/session";
 import { db } from "@/src/lib/auth";
 import { user, account } from "@/schema/auth-schema";
 import { eq } from "drizzle-orm";
 import { SettingsClient } from "./settings-client";
+
+export const metadata: Metadata = {
+  title: "Settings",
+};
 
 export default async function SettingsPage() {
   const session = await getSession();

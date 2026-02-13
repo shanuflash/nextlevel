@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { db } from "@/src/lib/auth";
 import { user } from "@/schema/auth-schema";
 import { userGame, game } from "@/schema/game-schema";
@@ -7,6 +8,11 @@ import Image from "next/image";
 import { igdbCover } from "@/src/lib/igdb";
 
 import { PublicNav } from "@/src/components/public-nav";
+
+export const metadata: Metadata = {
+  title: "Explore",
+  description: "Popular games and user catalogs on NextLevel.",
+};
 
 export default async function ExplorePage() {
   const usersWithGames = await db
