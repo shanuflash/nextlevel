@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/src/lib/auth-client";
+import { Avatar } from "@/src/components/avatar";
 
 
 interface AuthNavUser {
@@ -69,19 +69,7 @@ export function AuthNav({ user }: { user: AuthNavUser }) {
             </Link>
           )}
           <div className="flex items-center gap-2">
-            {user.image ? (
-              <Image
-                src={user.image}
-                alt={user.name}
-                width={28}
-                height={28}
-                className="size-7 rounded-full ring-1 ring-white/10"
-              />
-            ) : (
-              <div className="size-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">
-                {user.name[0]}
-              </div>
-            )}
+            <Avatar name={user.name} image={user.image} size="xs" />
             <button
               onClick={() =>
                 signOut({

@@ -6,6 +6,7 @@ import { desc, count, eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import Image from "next/image";
 import { igdbCover } from "@/src/lib/igdb";
+import { Avatar } from "@/src/components/avatar";
 
 import { PublicNav } from "@/src/components/public-nav";
 
@@ -119,19 +120,7 @@ export default async function ExplorePage() {
                   href={`/u/${u.username || u.id}`}
                   className="bg-white/3 rounded-2xl border border-white/8 p-5 flex items-center gap-4 hover:bg-white/5 transition-colors"
                 >
-                  {u.image ? (
-                    <Image
-                      src={u.image}
-                      alt={u.name}
-                      width={48}
-                      height={48}
-                      className="size-12 rounded-xl ring-1 ring-white/10"
-                    />
-                  ) : (
-                    <div className="size-12 rounded-xl bg-primary/20 flex items-center justify-center text-lg font-bold text-primary">
-                      {u.name[0]}
-                    </div>
-                  )}
+                  <Avatar name={u.name} image={u.image} size="md" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{u.name}</p>
                     {u.username && (

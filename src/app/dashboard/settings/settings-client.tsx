@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { updateProfile, setNewPassword as setPasswordAction } from "./actions";
+import { Avatar } from "@/src/components/avatar";
 import { authClient } from "@/src/lib/auth-client";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -100,19 +100,7 @@ function ProfileSection({ user }: { user: UserData }) {
       <form action={handleSubmit}>
         <div className="bg-white/[0.03] rounded-2xl border border-white/[0.06] divide-y divide-white/[0.06]">
           <div className="p-5 flex items-center gap-4">
-            {user.image ? (
-              <Image
-                src={user.image}
-                alt={user.name}
-                width={48}
-                height={48}
-                className="size-12 rounded-xl ring-1 ring-white/10"
-              />
-            ) : (
-              <div className="size-12 rounded-xl bg-primary/20 flex items-center justify-center text-lg font-bold text-primary ring-1 ring-white/10">
-                {user.name[0]?.toUpperCase()}
-              </div>
-            )}
+            <Avatar name={user.name} image={user.image} size="md" showRing />
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">{user.name}</p>
               <p className="text-xs text-white/30 truncate">{user.email}</p>

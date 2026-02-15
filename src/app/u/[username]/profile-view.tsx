@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { igdbCover } from "@/src/lib/igdb";
+import { Avatar } from "@/src/components/avatar";
 import {
   CATEGORIES,
   CATEGORY_TAB_COLORS,
@@ -257,19 +258,7 @@ function BentoHeader({ profile }: { profile: ProfileData }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
       <div className="md:col-span-2 bg-white/3 rounded-3xl border border-white/8 p-8 flex items-center gap-6">
-        {profile.avatarUrl ? (
-          <Image
-            src={profile.avatarUrl}
-            alt={profile.displayName}
-            width={96}
-            height={96}
-            className="size-24 rounded-2xl bg-white/10 ring-2 ring-white/10"
-          />
-        ) : (
-          <div className="size-24 rounded-2xl bg-primary/20 ring-2 ring-white/10 flex items-center justify-center text-3xl font-bold text-primary">
-            {profile.displayName[0]?.toUpperCase()}
-          </div>
-        )}
+        <Avatar name={profile.displayName} image={profile.avatarUrl} size="lg" showRing />
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             {profile.displayName}

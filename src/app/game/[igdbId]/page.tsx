@@ -9,6 +9,7 @@ import Image from "next/image";
 import { fetchIGDBGame, igdbCover } from "@/src/lib/igdb";
 
 import { PublicNav } from "@/src/components/public-nav";
+import { Avatar } from "@/src/components/avatar";
 import { CATEGORIES } from "@/src/lib/constants";
 
 export async function generateMetadata({
@@ -237,19 +238,7 @@ export default async function GameDetailPage({
                       href={`/u/${u.username || u.id}`}
                       className="flex items-center gap-3 hover:bg-white/5 -mx-2 px-2 py-1.5 rounded-lg transition-colors"
                     >
-                      {u.image ? (
-                        <Image
-                          src={u.image}
-                          alt={u.name}
-                          width={32}
-                          height={32}
-                          className="size-8 rounded-lg ring-1 ring-white/10"
-                        />
-                      ) : (
-                        <div className="size-8 rounded-lg bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                          {u.name[0]}
-                        </div>
-                      )}
+                      <Avatar name={u.name} image={u.image} size="sm" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{u.name}</p>
                       </div>
