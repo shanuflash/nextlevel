@@ -24,7 +24,6 @@ export async function PublicNav() {
       return (
         <AuthNav
           user={{
-            id: session.user.id,
             name: dbUser.name,
             image: dbUser.image ?? undefined,
             username: dbUser.username ?? undefined,

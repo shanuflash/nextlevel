@@ -50,7 +50,6 @@ interface CategoryStat {
 }
 
 interface GameUser {
-  id: string;
   name: string;
   username: string | null;
   image: string | null;
@@ -103,7 +102,6 @@ export default async function GameDetailPage({
 
     usersWithGame = await db
       .select({
-        id: user.id,
         name: user.name,
         username: user.username,
         image: user.image,
@@ -230,12 +228,12 @@ export default async function GameDetailPage({
               <p className="text-white/30 text-sm">No users yet.</p>
             ) : (
               <div className="space-y-3">
-                {usersWithGame.map((u) => {
+                {usersWithGame.filter((u) => u.username).map((u) => {
                   const cat = CATEGORIES.find((c) => c.id === u.category);
                   return (
                     <Link
-                      key={u.id}
-                      href={`/u/${u.username || u.id}`}
+                      key={u.username}
+                      href={`/u/${u.username}`}
                       className="flex items-center gap-3 hover:bg-white/5 -mx-2 px-2 py-1.5 rounded-lg transition-colors"
                     >
                       <Avatar name={u.name} image={u.image} size="sm" />

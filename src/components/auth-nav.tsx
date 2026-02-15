@@ -7,7 +7,6 @@ import { Avatar } from "@/src/components/avatar";
 
 
 interface AuthNavUser {
-  id: string;
   name: string;
   image?: string;
   username?: string;

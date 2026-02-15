@@ -3,9 +3,7 @@
 import { AuthNav } from "@/src/components/auth-nav";
 
 interface DashboardUser {
-  id: string;
   name: string;
-  email: string;
   image?: string;
   username?: string;
 }

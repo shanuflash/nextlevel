@@ -18,7 +18,6 @@ export const metadata: Metadata = {
 export default async function ExplorePage() {
   const usersWithGames = await db
     .select({
-      id: user.id,
       name: user.name,
       username: user.username,
       image: user.image,
@@ -114,10 +113,10 @@ export default async function ExplorePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {usersWithGames.map((u) => (
+              {usersWithGames.filter((u) => u.username).map((u) => (
                 <Link
-                  key={u.id}
-                  href={`/u/${u.username || u.id}`}
+                  key={u.username}
+                  href={`/u/${u.username}`}
                   className="bg-white/3 rounded-2xl border border-white/8 p-5 flex items-center gap-4 hover:bg-white/5 transition-colors"
                 >
                   <Avatar name={u.name} image={u.image} size="md" />

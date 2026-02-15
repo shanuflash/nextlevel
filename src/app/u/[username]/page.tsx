@@ -122,7 +122,7 @@ export default async function ProfilePage({
 
   const profileData = {
     displayName: dbUser.name,
-    username: dbUser.username || dbUser.id,
+    username: dbUser.username || "user",
     bio: dbUser.bio || "",
     avatarUrl: dbUser.image || null,
     totalGames: userGames.length,
