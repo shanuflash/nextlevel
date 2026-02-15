@@ -26,7 +26,7 @@ A personal game tracking and catalog app. Search games via IGDB, organize them i
 - **Styling**: Tailwind CSS 4, Radix UI, shadcn/ui
 - **UI**: Sonner (toasts), Hugeicons
 - **OG Images**: @vercel/og (Edge runtime)
-- **Game Data**: [IGDB](https://www.igdb.com)
+- **Game Data**: [IGDB API](https://www.igdb.com/api) (via Twitch OAuth)
 - **Hosting**: Vercel
 
 ## Architecture
@@ -71,4 +71,4 @@ Two Vercel cron jobs keep game data fresh:
 
 ### Game Data
 
-All game metadata comes from [IGDB](https://www.igdb.com). The app caches game data locally to avoid repeated API calls. Cover images are served directly from the IGDB CDN.
+All game metadata comes from the [IGDB API](https://www.igdb.com/api). The app caches game data locally to avoid repeated API calls. Cover images are served directly from the IGDB CDN.

@@ -27,7 +27,7 @@ export function DashboardShell({
             NextLevel — Your Gaming Catalog
           </span>
           <a
-            href="https://www.igdb.com"
+            href="https://www.igdb.com/api"
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-white/20 hover:text-white/40 transition-colors"

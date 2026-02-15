@@ -33,8 +33,7 @@ export default async function LandingPage() {
           Your Gaming Catalog
         </div>
         <h2 className="text-5xl sm:text-6xl font-bold tracking-tight leading-[1.1] max-w-3xl mx-auto">
-          Your games.{" "}
-          <span className="text-primary">Your categories.</span>{" "}
+          Your games. <span className="text-primary">Your categories.</span>{" "}
           Your profile.
         </h2>
         <p className="text-white/50 text-lg mt-6 max-w-xl mx-auto leading-relaxed">
@@ -62,7 +61,8 @@ export default async function LandingPage() {
           <div className="bg-white/3 rounded-2xl border border-white/8 p-6">
             <h3 className="font-semibold text-sm">Categorize</h3>
             <p className="text-white/40 text-sm mt-1 leading-relaxed">
-              Organize games into Finished, Playing, Want to Play, On Hold, or Dropped.
+              Organize games into Finished, Playing, Want to Play, On Hold, or
+              Dropped.
             </p>
           </div>
           <div className="bg-white/3 rounded-2xl border border-white/8 p-6">
@@ -88,7 +88,7 @@ export default async function LandingPage() {
             </span>
             <span className="text-white/10">·</span>
             <a
-              href="https://www.igdb.com"
+              href="https://www.igdb.com/api"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-white/20 hover:text-white/40 transition-colors"
