@@ -78,6 +78,7 @@ export const auth = betterAuth({
       mapProfileToUser: (profile) => ({
         name: profile.name,
         email: profile.email,
+        image: undefined,
       }),
     },
     google: {
@@ -87,6 +88,7 @@ export const auth = betterAuth({
       mapProfileToUser: (profile) => ({
         name: profile.name,
         email: profile.email,
+        image: undefined,
       }),
     },
   },
