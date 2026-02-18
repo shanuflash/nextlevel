@@ -53,6 +53,12 @@ async function findUniqueUsername(base: string): Promise<string> {
   return `${base.slice(0, 20)}${Date.now().toString(36)}`;
 }
 
+const mapSocialProfile = (profile: { name: string; email: string }) => ({
+  name: profile.name,
+  email: profile.email,
+  image: undefined,
+});
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "sqlite",
@@ -75,21 +81,13 @@ export const auth = betterAuth({
       clientId: process.env.GITHUB_CLIENT_ID!,
       clientSecret: process.env.GITHUB_CLIENT_SECRET!,
       prompt: "select_account",
-      mapProfileToUser: (profile) => ({
-        name: profile.name,
-        email: profile.email,
-        image: undefined,
-      }),
+      mapProfileToUser: mapSocialProfile,
     },
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       prompt: "select_account",
-      mapProfileToUser: (profile) => ({
-        name: profile.name,
-        email: profile.email,
-        image: undefined,
-      }),
+      mapProfileToUser: mapSocialProfile,
     },
   },
   databaseHooks: {

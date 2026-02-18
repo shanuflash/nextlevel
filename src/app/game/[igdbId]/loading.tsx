@@ -1,5 +1,5 @@
 import { PublicNav } from "@/src/components/public-nav";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/src/components/ui/skeleton";
 
 export default function GameLoading() {
   return (

@@ -43,6 +43,14 @@ export async function getIGDBToken(forceRefresh = false) {
   return cachedToken.token;
 }
 
+export function igdbHeaders(token: string) {
+  return {
+    "Client-ID": process.env.TWITCH_CLIENT_ID!,
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "text/plain",
+  };
+}
+
 export interface IGDBGameMeta {
   igdbId: number;
   title: string;
@@ -97,6 +105,7 @@ export async function fetchIGDBGames(
 
   try {
     const token = await getIGDBToken();
+    const headers = igdbHeaders(token);
 
     const chunks: number[][] = [];
     for (let i = 0; i < unique.length; i += 500) {
@@ -107,11 +116,7 @@ export async function fetchIGDBGames(
       const ids = chunk.join(",");
       const res = await fetch("https://api.igdb.com/v4/games", {
         method: "POST",
-        headers: {
-          "Client-ID": process.env.TWITCH_CLIENT_ID!,
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "text/plain",
-        },
+        headers,
         body: `fields name, slug, cover.image_id, genres.name, platforms.abbreviation, first_release_date, summary, total_rating_count, hypes;
 where id = (${ids});
 limit 500;`,

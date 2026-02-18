@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/src/lib/auth";
 import { game } from "@/schema/game-schema";
 import { eq, sql } from "drizzle-orm";
-import { getIGDBToken } from "@/src/lib/igdb";
+import { getIGDBToken, igdbHeaders } from "@/src/lib/igdb";
+import { verifyCronSecret } from "@/src/lib/cron";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -73,18 +74,12 @@ async function upsertGame(raw: IGDBRaw) {
 }
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const unauthorized = verifyCronSecret(req);
+  if (unauthorized) return unauthorized;
 
   try {
     const token = await getIGDBToken();
-    const headers = {
-      "Client-ID": process.env.TWITCH_CLIENT_ID!,
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "text/plain",
-    };
+    const headers = igdbHeaders(token);
 
     const now = Math.floor(Date.now() / 1000);
     const ninetyDaysAgo = now - 90 * 24 * 60 * 60;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getIGDBToken, type IGDBGameMeta } from "@/src/lib/igdb";
+import { getIGDBToken, igdbHeaders, type IGDBGameMeta } from "@/src/lib/igdb";
 
 interface IGDBRawSearchResult {
   id: number;
@@ -75,11 +75,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const token = await getIGDBToken();
-    const headers = {
-      "Client-ID": process.env.TWITCH_CLIENT_ID!,
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "text/plain",
-    };
+    const headers = igdbHeaders(token);
 
     const escaped = query.replace(/"/g, '\\"');
     const isNumeric = /^\d+$/.test(query.trim());
