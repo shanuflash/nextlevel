@@ -146,7 +146,10 @@ function AddGameDialog({
                           <div className="w-10 h-14 rounded-lg overflow-hidden bg-white/5 flex-none relative">
                             {r.coverImageId ? (
                               <Image
-                                src={igdbCover(r.coverImageId, "t_cover_small") ?? ""}
+                                src={
+                                  igdbCover(r.coverImageId, "t_cover_small") ??
+                                  ""
+                                }
                                 alt={r.title}
                                 fill
                                 className="object-cover"
@@ -199,7 +202,9 @@ function AddGameDialog({
                 <div className="w-16 h-22 rounded-lg overflow-hidden bg-white/5 flex-none relative">
                   {selected.coverImageId ? (
                     <Image
-                      src={igdbCover(selected.coverImageId, "t_cover_big") ?? ""}
+                      src={
+                        igdbCover(selected.coverImageId, "t_cover_big") ?? ""
+                      }
                       alt={selected.title}
                       fill
                       className="object-cover"
@@ -411,12 +416,7 @@ function BulkAddDialog({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
       <div className="bg-[#12121a] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-6 pb-0">
           <div>
@@ -525,7 +525,9 @@ function BulkAddDialog({
                       <div className="w-10 h-14 rounded-lg overflow-hidden bg-white/5 flex-none relative">
                         {r.coverImageId ? (
                           <Image
-                            src={igdbCover(r.coverImageId, "t_cover_small") ?? ""}
+                            src={
+                              igdbCover(r.coverImageId, "t_cover_small") ?? ""
+                            }
                             alt={r.title}
                             fill
                             className="object-cover"
