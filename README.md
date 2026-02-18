@@ -15,14 +15,15 @@ A personal game tracking and catalog app. Search games via IGDB, organize them i
 - Game detail pages with metadata, cover art, and community stats
 - Explore page showing popular games and active users
 - Profile settings: edit name, username, bio, and change password
-- Google OAuth and email/password authentication with account linking
+- Google and GitHub OAuth with email/password authentication and account linking
+- Route-level loading skeletons for instant navigation feedback
 - Automated cron jobs for popularity scores and featured game rotation
 
 ## Tech Stack
 
 - **Framework**: Next.js 16 (App Router, React 19)
 - **Database**: Turso (LibSQL) with Drizzle ORM
-- **Auth**: better-auth (email/password + Google OAuth)
+- **Auth**: better-auth (email/password + Google & GitHub OAuth)
 - **Styling**: Tailwind CSS 4, Radix UI, shadcn/ui
 - **UI**: Sonner (toasts), Hugeicons
 - **OG Images**: @vercel/og (Edge runtime)
