@@ -6,6 +6,20 @@ export default async function LandingPage() {
   const session = await getSession();
   if (session) redirect("/dashboard");
 
+  const steps = [
+    { n: "01", t: "Sign up", d: "Email, Google, or GitHub. Pick a username." },
+    {
+      n: "02",
+      t: "Add games",
+      d: "Search IGDB, categorize, rate. Or bulk add.",
+    },
+    {
+      n: "03",
+      t: "Share",
+      d: "Your catalog is live. Send your profile link.",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-[#09090d] text-white overflow-hidden">
       <nav className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between relative z-10">
@@ -49,7 +63,7 @@ export default async function LandingPage() {
               href="/signup"
               className="px-6 py-3 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
             >
-              Start tracking — free
+              Start tracking &mdash; free
             </Link>
             <Link
               href="/explore"
@@ -142,7 +156,8 @@ export default async function LandingPage() {
                 </h3>
                 <p className="text-white/40 text-sm mt-2 leading-relaxed max-w-md">
                   A beautiful public page with your stats, categories, and game
-                  grid. Custom OG image included — looks great when shared.
+                  grid. Custom OG image included &mdash; looks great when
+                  shared.
                 </p>
               </div>
               <div className="shrink-0 flex items-center gap-2">
@@ -157,48 +172,28 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      <div className="mx-auto max-w-6xl px-6 py-4">
-        <div className="h-px bg-white/6" />
-      </div>
-
-      <section className="mx-auto max-w-6xl px-6 pb-24 pt-8">
-        <p className="text-xs font-medium uppercase tracking-widest text-white/30 mb-6">
-          How it works
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {[
-            {
-              n: "01",
-              t: "Sign up",
-              d: "Email, Google, or GitHub. Pick a username — that's your profile URL.",
-            },
-            {
-              n: "02",
-              t: "Add games",
-              d: "Search IGDB, pick a category, rate it. Or bulk add your whole backlog.",
-            },
-            {
-              n: "03",
-              t: "Share",
-              d: "Your catalog is live at /u/yourname. Send the link anywhere.",
-            },
-          ].map((s) => (
-            <div
-              key={s.n}
-              className="rounded-2xl border border-white/8 bg-white/3 p-6 flex flex-col"
-            >
-              <span className="text-3xl font-bold text-white/6 leading-none">
-                {s.n}
-              </span>
-              <h4 className="text-sm font-bold mt-3">{s.t}</h4>
-              <p className="text-white/40 text-xs mt-1.5 leading-relaxed">
-                {s.d}
-              </p>
-            </div>
-          ))}
+      <section className="relative pb-20 pt-12">
+        <div className="absolute inset-0 bg-linear-to-b from-white/2 via-transparent to-transparent pointer-events-none" />
+        <div className="mx-auto max-w-6xl px-6 relative z-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {steps.map((s) => (
+              <div key={s.n} className="relative">
+                <span className="absolute -top-2 right-0 text-6xl font-bold text-white/4 leading-none select-none">
+                  {s.n}
+                </span>
+                <p className="text-[10px] font-medium uppercase tracking-widest text-white/20 mb-3">
+                  {s.n === "01" ? "How it works" : "\u00A0"}
+                </p>
+                <h4 className="text-sm font-semibold">{s.t}</h4>
+                <p className="text-white/35 text-xs mt-1 leading-relaxed">
+                  {s.d}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
-
+      <div className="h-px bg-white/6 mb-12 mx-[30vw]" />
       <section className="mx-auto max-w-6xl px-6 pb-32 relative">
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
         <div className="text-center relative z-10">
