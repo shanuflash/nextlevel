@@ -1,11 +1,7 @@
 "use client";
 
 import { signIn, useSession } from "@/src/lib/auth-client";
-import {
-  Github01FreeIcons,
-  Github01Icon,
-  GithubIcon,
-} from "@hugeicons/core-free-icons";
+import { Github01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
