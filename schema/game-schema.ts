@@ -54,6 +54,8 @@ export const userGame = sqliteTable(
     }).notNull(),
     rating: real("rating"),
     notes: text("notes"),
+    startedAt: integer("started_at", { mode: "timestamp_ms" }),
+    finishedAt: integer("finished_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),

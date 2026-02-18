@@ -58,6 +58,7 @@ export async function addGame(input: AddGameInput) {
       popularity: meta.popularity,
       isFeaturedAnticipated: false,
       isFeaturedReleased: false,
+      updatedAt: new Date(),
     };
   }
 
@@ -70,6 +71,7 @@ export async function addGame(input: AddGameInput) {
 
   if (existingUserGame) throw new Error("Game already in your catalog");
 
+  const now = new Date();
   await db.insert(userGame).values({
     id: generateId(),
     userId: session.user.id,
@@ -77,6 +79,8 @@ export async function addGame(input: AddGameInput) {
     igdbId,
     category: category as GameCategory,
     rating: rating ?? null,
+    startedAt: category === "playing" ? now : null,
+    finishedAt: category === "finished" ? now : null,
   });
 
   revalidatePath("/dashboard/games");
@@ -135,6 +139,7 @@ export async function bulkAddGames(items: BulkAddItem[]) {
         popularity: meta.popularity,
         isFeaturedAnticipated: false,
         isFeaturedReleased: false,
+        updatedAt: new Date(),
       });
     })
   );
@@ -181,6 +186,7 @@ export async function bulkAddGames(items: BulkAddItem[]) {
         return;
       }
       try {
+        const now = new Date();
         await db.insert(userGame).values({
           id: generateId(),
           userId: session.user.id,
@@ -188,6 +194,8 @@ export async function bulkAddGames(items: BulkAddItem[]) {
           igdbId: item.igdbId,
           category: item.category as GameCategory,
           rating: item.rating ?? null,
+          startedAt: item.category === "playing" ? now : null,
+          finishedAt: item.category === "finished" ? now : null,
         });
         results.push({ igdbId: item.igdbId, title: dbGame.title, ok: true });
       } catch {
@@ -216,11 +224,30 @@ export async function updateGame(formData: FormData) {
 
   if (!userGameId) throw new Error("Missing game ID");
 
+  const existing = await db.query.userGame.findFirst({
+    where: and(eq(userGame.id, userGameId), eq(userGame.userId, session.user.id)),
+    columns: { category: true, startedAt: true, finishedAt: true },
+  });
+
+  const now = new Date();
+  const timestamps: { startedAt?: Date | null; finishedAt?: Date | null } = {};
+
+  if (existing && category !== existing.category) {
+    if (category === "playing" && !existing.startedAt) {
+      timestamps.startedAt = now;
+    }
+    if (category === "finished") {
+      if (!existing.startedAt) timestamps.startedAt = now;
+      timestamps.finishedAt = now;
+    }
+  }
+
   await db
     .update(userGame)
     .set({
       category: category as GameCategory,
       rating: rating ? parseFloat(rating) : null,
+      ...timestamps,
     })
     .where(
       and(eq(userGame.id, userGameId), eq(userGame.userId, session.user.id))
