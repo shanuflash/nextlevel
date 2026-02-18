@@ -1,6 +1,8 @@
 "use client";
 
 import { authClient, signUp, signIn, useSession } from "@/src/lib/auth-client";
+import { Github01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -22,7 +24,10 @@ export default function SignupPage() {
   const router = useRouter();
   const { data: session, isPending: sessionLoading } = useSession();
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isOAuthLoading, setIsOAuthLoading] = useState({
+    google: false,
+    github: false,
+  });
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -35,7 +40,7 @@ export default function SignupPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const anyLoading = isLoading || isGoogleLoading;
+  const anyLoading = isLoading || Object.values(isOAuthLoading).some(Boolean);
 
   useEffect(() => {
     if (session && !sessionLoading) {
@@ -139,7 +144,7 @@ export default function SignupPage() {
 
   async function handleGoogleSignIn() {
     setError("");
-    setIsGoogleLoading(true);
+    setIsOAuthLoading({ google: true, github: false });
     try {
       await signIn.social({
         provider: "google",
@@ -147,7 +152,21 @@ export default function SignupPage() {
       });
     } catch {
       setError("Google sign-in failed. Please try again.");
-      setIsGoogleLoading(false);
+      setIsOAuthLoading({ google: false, github: false });
+    }
+  }
+
+  async function handleGithubSignIn() {
+    setError("");
+    setIsOAuthLoading({ google: false, github: true });
+    try {
+      await signIn.social({
+        provider: "github",
+        callbackURL: "/dashboard",
+      });
+    } catch {
+      setError("Github sign-in failed. Please try again.");
+      setIsOAuthLoading({ google: false, github: false });
     }
   }
 
@@ -354,7 +373,20 @@ export default function SignupPage() {
                 fill="#EA4335"
               />
             </svg>
-            {isGoogleLoading ? "Signing in..." : "Continue with Google"}
+            {isOAuthLoading.google ? "Signing in..." : "Continue with Google"}
+          </button>
+
+          <button
+            onClick={handleGithubSignIn}
+            disabled={anyLoading}
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-medium text-sm hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <HugeiconsIcon
+              icon={Github01Icon}
+              strokeWidth={2}
+              className="size-5"
+            />
+            {isOAuthLoading.github ? "Signing in..." : "Continue with Github"}
           </button>
 
           <p className="text-center text-sm text-white/40">
