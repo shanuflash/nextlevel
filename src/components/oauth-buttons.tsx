@@ -21,7 +21,10 @@ export function OAuthButtons({
 
   async function handleSignIn(provider: "google" | "github") {
     onError?.("");
-    setLoading({ google: provider === "google", github: provider === "github" });
+    setLoading({
+      google: provider === "google",
+      github: provider === "github",
+    });
     onLoadingChange?.(true);
     try {
       await signIn.social({ provider, callbackURL: "/dashboard" });
@@ -52,11 +55,7 @@ export function OAuthButtons({
         disabled={disabled || anyLoading}
         className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-medium text-sm hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        <HugeiconsIcon
-          icon={Github01Icon}
-          strokeWidth={2}
-          className="size-5"
-        />
+        <HugeiconsIcon icon={Github01Icon} strokeWidth={2} className="size-5" />
         {loading.github ? "Signing in..." : "Continue with Github"}
       </button>
     </>

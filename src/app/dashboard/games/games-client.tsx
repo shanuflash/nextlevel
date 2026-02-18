@@ -7,6 +7,7 @@ import { addGame, updateGame, removeGame, bulkAddGames } from "./actions";
 import { igdbCover, type IGDBGameMeta } from "@/src/lib/igdb";
 import { CATEGORIES } from "@/src/lib/constants";
 import { toast } from "sonner";
+import { RatingSlider } from "@/src/components/rating-slider";
 
 export interface UserGameRow {
   id: string;
@@ -264,15 +265,9 @@ function AddGameDialog({
                 <label className="text-xs text-white/40 block mb-1.5">
                   Rating (1-10)
                 </label>
-                <input
-                  value={rating}
-                  onChange={(e) => setRating(e.target.value)}
-                  type="number"
-                  min="1"
-                  max="10"
-                  step="0.5"
-                  placeholder="Optional"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-white/20"
+                <RatingSlider
+                  value={rating ? parseFloat(rating) : null}
+                  onChange={(v) => setRating(v ? String(v) : "")}
                 />
               </div>
             </>
@@ -611,6 +606,7 @@ function EditGameDialog({
   const [isPending, setIsPending] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editCategory, setEditCategory] = useState(game.category);
+  const [editRating, setEditRating] = useState<number | null>(game.rating);
   const coverUrl = igdbCover(game.coverImageId, "t_cover_big");
   const cat = CATEGORIES.find((c) => c.id === game.category);
 
@@ -724,14 +720,10 @@ function EditGameDialog({
                 <label className="text-xs text-white/40 block mb-1.5">
                   Rating (1-10)
                 </label>
-                <input
+                <RatingSlider
+                  value={editRating}
+                  onChange={setEditRating}
                   name="rating"
-                  type="number"
-                  min="1"
-                  max="10"
-                  step="0.5"
-                  defaultValue={game.rating ?? ""}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-white/20"
                 />
               </div>
 

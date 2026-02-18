@@ -203,7 +203,9 @@ function SecuritySection({ user }: { user: UserData }) {
 
     setIsUnlinking(true);
     try {
-      const { error } = await authClient.unlinkAccount({ providerId: provider });
+      const { error } = await authClient.unlinkAccount({
+        providerId: provider,
+      });
       if (error) throw new Error(error.message);
       const name = provider === "google" ? "Google" : "Github";
       toast.success(`${name} account unlinked`);
@@ -466,7 +468,7 @@ function PasswordFields({ hasPassword }: { hasPassword: boolean }) {
           <button
             type="submit"
             disabled={isPending || mismatch}
-            className="shrink-0 px-5 py-2 rounded-xl text-sm font-medium bg-white/[0.06] border border-white/[0.08] text-white hover:bg-white/[0.1] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="shrink-0 px-5 py-2 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPending
               ? "Saving..."

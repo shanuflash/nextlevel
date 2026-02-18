@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/src/components/ui/sonner";
-import { Analytics } from '@vercel/analytics/next';
+import { Analytics } from "@vercel/analytics/next";
 
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -22,8 +22,7 @@ export const metadata: Metadata = {
     default: "NextLevel",
     template: "%s | NextLevel",
   },
-  description:
-    "Track your games, build your catalog, and share your profile.",
+  description: "Track your games, build your catalog, and share your profile.",
   openGraph: {
     type: "website",
     siteName: "NextLevel",

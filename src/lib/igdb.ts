@@ -5,7 +5,7 @@ export function igdbCover(
     | "t_cover_small"
     | "t_cover_big"
     | "t_cover_big_2x"
-    | "t_1080p" = "t_cover_big_2x",
+    | "t_1080p" = "t_cover_big_2x"
 ) {
   if (!imageId) return null;
   return `https://images.igdb.com/igdb/image/upload/${size}/${imageId}.webp`;
@@ -96,7 +96,7 @@ function mapRawGame(g: IGDBRawGame): IGDBGameMeta {
 }
 
 export async function fetchIGDBGames(
-  igdbIds: number[],
+  igdbIds: number[]
 ): Promise<Map<number, IGDBGameMeta>> {
   const map = new Map<number, IGDBGameMeta>();
   if (igdbIds.length === 0) return map;
@@ -135,9 +135,8 @@ limit 500;`,
 }
 
 export async function fetchIGDBGame(
-  igdbId: number,
+  igdbId: number
 ): Promise<IGDBGameMeta | null> {
   const map = await fetchIGDBGames([igdbId]);
   return map.get(igdbId) ?? null;
 }
-

@@ -59,17 +59,24 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    let updated = 0;
-    for (const g of allGames) {
-      const score = scores.get(g.igdbId);
-      if (score !== undefined) {
-        await db
+    const updates = allGames
+      .filter((g) => scores.has(g.igdbId))
+      .map((g) =>
+        db
           .update(game)
-          .set({ popularity: score })
-          .where(eq(game.id, g.id));
-        updated++;
+          .set({ popularity: scores.get(g.igdbId)! })
+          .where(eq(game.id, g.id))
+      );
+
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < updates.length; i += BATCH_SIZE) {
+      const slice = updates.slice(i, i + BATCH_SIZE);
+      if (slice.length > 0) {
+        await db.batch(slice as [(typeof slice)[0], ...typeof slice]);
       }
     }
+
+    const updated = updates.length;
 
     return NextResponse.json({
       message: `Updated ${updated} of ${allGames.length} games`,

@@ -29,7 +29,7 @@ function mapResult(g: IGDBRawSearchResult): IGDBGameMeta {
       ? new Date(g.first_release_date * 1000).toISOString().split("T")[0]
       : null,
     summary: g.summary ?? null,
-    popularity: (g.total_rating_count ?? 0),
+    popularity: g.total_rating_count ?? 0,
   };
 }
 
@@ -38,7 +38,7 @@ const FIELDS =
 
 async function igdbFetch(
   headers: Record<string, string>,
-  body: string,
+  body: string
 ): Promise<IGDBRawSearchResult[]> {
   const res = await fetch("https://api.igdb.com/v4/games", {
     method: "POST",
@@ -82,13 +82,13 @@ export async function GET(req: NextRequest) {
 
     const games = await igdbFetch(
       headers,
-      `fields ${FIELDS};\nwhere name ~ *"${escaped}"*;\nsort total_rating_count desc;\nlimit 10;`,
+      `fields ${FIELDS};\nwhere name ~ *"${escaped}"*;\nsort total_rating_count desc;\nlimit 10;`
     );
 
     if (isNumeric) {
       const idGames = await igdbFetch(
         headers,
-        `fields ${FIELDS};\nwhere id = ${query.trim()};\nlimit 1;`,
+        `fields ${FIELDS};\nwhere id = ${query.trim()};\nlimit 1;`
       );
       const existingIds = new Set(games.map((g) => g.id));
       for (const g of idGames) {

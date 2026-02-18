@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/src/lib/auth";
 import { game } from "@/schema/game-schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, gt, sql } from "drizzle-orm";
 import { getIGDBToken, igdbHeaders } from "@/src/lib/igdb";
 import { verifyCronSecret } from "@/src/lib/cron";
 
@@ -122,10 +122,60 @@ export async function GET(req: NextRequest) {
       releasedCount++;
     }
 
+    const todayStr = new Date().toISOString().split("T")[0];
+    const upcomingGames = await db
+      .select({ id: game.id, igdbId: game.igdbId })
+      .from(game)
+      .where(gt(game.releaseDate, todayStr));
+
+    let releaseDateUpdates = 0;
+    if (upcomingGames.length > 0) {
+      const upcomingChunks: number[][] = [];
+      const upcomingIds = upcomingGames.map((g) => g.igdbId);
+      for (let i = 0; i < upcomingIds.length; i += 500) {
+        upcomingChunks.push(upcomingIds.slice(i, i + 500));
+      }
+
+      const dateMap = new Map<number, string | null>();
+      for (const chunk of upcomingChunks) {
+        const ids = chunk.join(",");
+        const res = await fetch("https://api.igdb.com/v4/games", {
+          method: "POST",
+          headers,
+          body: `fields first_release_date;\nwhere id = (${ids});\nlimit 500;`,
+        });
+        if (!res.ok) continue;
+        const raw: { id: number; first_release_date?: number }[] =
+          await res.json();
+        for (const g of raw) {
+          dateMap.set(
+            g.id,
+            g.first_release_date
+              ? new Date(g.first_release_date * 1000)
+                  .toISOString()
+                  .split("T")[0]
+              : null
+          );
+        }
+      }
+
+      for (const g of upcomingGames) {
+        const freshDate = dateMap.get(g.igdbId);
+        if (freshDate !== undefined) {
+          await db
+            .update(game)
+            .set({ releaseDate: freshDate })
+            .where(eq(game.id, g.id));
+          releaseDateUpdates++;
+        }
+      }
+    }
+
     return NextResponse.json({
-      message: `Updated ${anticipatedCount} anticipated, ${releasedCount} released`,
+      message: `Updated ${anticipatedCount} anticipated, ${releasedCount} released, ${releaseDateUpdates} release dates refreshed`,
       anticipated: anticipatedCount,
       released: releasedCount,
+      releaseDateUpdates,
     });
   } catch (e) {
     console.error("[cron] update-featured failed:", e);

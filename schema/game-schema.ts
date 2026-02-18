@@ -30,6 +30,9 @@ export const game = sqliteTable(
     isFeaturedReleased: integer("is_featured_released", { mode: "boolean" })
       .default(false)
       .notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .$onUpdate(() => new Date()),
   },
   (table) => [index("game_igdbId_idx").on(table.igdbId)],
 );

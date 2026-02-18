@@ -113,32 +113,34 @@ export default async function ExplorePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {usersWithGames.filter((u) => u.username).map((u) => (
-                <Link
-                  key={u.username}
-                  href={`/u/${u.username}`}
-                  className="bg-white/3 rounded-2xl border border-white/8 p-5 flex items-center gap-4 hover:bg-white/5 transition-colors"
-                >
-                  <Avatar name={u.name} image={u.image} size="md" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">{u.name}</p>
-                    {u.username && (
-                      <p className="text-xs text-white/30">@{u.username}</p>
-                    )}
-                    {u.bio && (
-                      <p className="text-xs text-white/40 mt-0.5 line-clamp-1">
-                        {u.bio}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right flex-none">
-                    <div className="text-sm font-bold text-primary">
-                      {u.gameCount}
+              {usersWithGames
+                .filter((u) => u.username)
+                .map((u) => (
+                  <Link
+                    key={u.username}
+                    href={`/u/${u.username}`}
+                    className="bg-white/3 rounded-2xl border border-white/8 p-5 flex items-center gap-4 hover:bg-white/5 transition-colors"
+                  >
+                    <Avatar name={u.name} image={u.image} size="md" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">{u.name}</p>
+                      {u.username && (
+                        <p className="text-xs text-white/30">@{u.username}</p>
+                      )}
+                      {u.bio && (
+                        <p className="text-xs text-white/40 mt-0.5 line-clamp-1">
+                          {u.bio}
+                        </p>
+                      )}
                     </div>
-                    <div className="text-[10px] text-white/30">games</div>
-                  </div>
-                </Link>
-              ))}
+                    <div className="text-right flex-none">
+                      <div className="text-sm font-bold text-primary">
+                        {u.gameCount}
+                      </div>
+                      <div className="text-[10px] text-white/30">games</div>
+                    </div>
+                  </Link>
+                ))}
             </div>
           )}
         </section>

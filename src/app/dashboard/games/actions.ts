@@ -64,7 +64,7 @@ export async function addGame(input: AddGameInput) {
   const existingUserGame = await db.query.userGame.findFirst({
     where: and(
       eq(userGame.userId, session.user.id),
-      eq(userGame.gameId, existingGame!.id),
+      eq(userGame.gameId, existingGame!.id)
     ),
   });
 
@@ -102,7 +102,8 @@ export async function bulkAddGames(items: BulkAddItem[]) {
   const existingMap = new Map(existingGames.map((g) => [g.igdbId, g]));
   const missingIds = igdbIds.filter((id) => !existingMap.has(id));
 
-  const igdbMap = missingIds.length > 0 ? await fetchIGDBGames(missingIds) : new Map();
+  const igdbMap =
+    missingIds.length > 0 ? await fetchIGDBGames(missingIds) : new Map();
 
   await Promise.all(
     missingIds.map(async (igdbId) => {
@@ -135,29 +136,48 @@ export async function bulkAddGames(items: BulkAddItem[]) {
         isFeaturedAnticipated: false,
         isFeaturedReleased: false,
       });
-    }),
+    })
   );
 
   const gameIds = [...existingMap.values()].map((g) => g.id);
-  const existingUserGames = gameIds.length > 0
-    ? await db.query.userGame.findMany({
-        where: (fields, { and: a, eq: e, inArray }) =>
-          a(e(fields.userId, session.user.id), inArray(fields.gameId, gameIds)),
-      })
-    : [];
+  const existingUserGames =
+    gameIds.length > 0
+      ? await db.query.userGame.findMany({
+          where: (fields, { and: a, eq: e, inArray }) =>
+            a(
+              e(fields.userId, session.user.id),
+              inArray(fields.gameId, gameIds)
+            ),
+        })
+      : [];
   const userGameSet = new Set(existingUserGames.map((ug) => ug.gameId));
 
-  const results: { igdbId: number; title: string; ok: boolean; error?: string }[] = [];
+  const results: {
+    igdbId: number;
+    title: string;
+    ok: boolean;
+    error?: string;
+  }[] = [];
 
   await Promise.all(
     items.map(async (item) => {
       const dbGame = existingMap.get(item.igdbId);
       if (!dbGame) {
-        results.push({ igdbId: item.igdbId, title: `ID ${item.igdbId}`, ok: false, error: "Not found on IGDB" });
+        results.push({
+          igdbId: item.igdbId,
+          title: `ID ${item.igdbId}`,
+          ok: false,
+          error: "Not found on IGDB",
+        });
         return;
       }
       if (userGameSet.has(dbGame.id)) {
-        results.push({ igdbId: item.igdbId, title: dbGame.title, ok: false, error: "Already in catalog" });
+        results.push({
+          igdbId: item.igdbId,
+          title: dbGame.title,
+          ok: false,
+          error: "Already in catalog",
+        });
         return;
       }
       try {
@@ -171,9 +191,14 @@ export async function bulkAddGames(items: BulkAddItem[]) {
         });
         results.push({ igdbId: item.igdbId, title: dbGame.title, ok: true });
       } catch {
-        results.push({ igdbId: item.igdbId, title: dbGame.title, ok: false, error: "Failed to add" });
+        results.push({
+          igdbId: item.igdbId,
+          title: dbGame.title,
+          ok: false,
+          error: "Failed to add",
+        });
       }
-    }),
+    })
   );
 
   revalidatePath("/dashboard/games");
@@ -198,7 +223,7 @@ export async function updateGame(formData: FormData) {
       rating: rating ? parseFloat(rating) : null,
     })
     .where(
-      and(eq(userGame.id, userGameId), eq(userGame.userId, session.user.id)),
+      and(eq(userGame.id, userGameId), eq(userGame.userId, session.user.id))
     );
 
   revalidatePath("/dashboard/games");
@@ -215,7 +240,7 @@ export async function removeGame(formData: FormData) {
   await db
     .delete(userGame)
     .where(
-      and(eq(userGame.id, userGameId), eq(userGame.userId, session.user.id)),
+      and(eq(userGame.id, userGameId), eq(userGame.userId, session.user.id))
     );
 
   revalidatePath("/dashboard/games");

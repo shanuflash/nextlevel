@@ -16,7 +16,8 @@ type UsernameStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 function validateUsername(v: string): string | null {
   if (v.length < MIN_LEN) return `At least ${MIN_LEN} characters`;
   if (v.length > MAX_LEN) return `Max ${MAX_LEN} characters`;
-  if (!USERNAME_RE.test(v)) return "Only lowercase letters, numbers, underscores, dots";
+  if (!USERNAME_RE.test(v))
+    return "Only lowercase letters, numbers, underscores, dots";
   return null;
 }
 
@@ -139,7 +140,11 @@ export default function SignupPage() {
     }
   }
 
-  const canSubmit = !anyLoading && usernameStatus !== "taken" && usernameStatus !== "checking" && usernameStatus !== "invalid";
+  const canSubmit =
+    !anyLoading &&
+    usernameStatus !== "taken" &&
+    usernameStatus !== "checking" &&
+    usernameStatus !== "invalid";
 
   if (sessionLoading) return null;
   if (session) return null;
@@ -207,36 +212,77 @@ export default function SignupPage() {
                   className={`w-full px-4 py-3 pr-10 rounded-xl bg-white/5 border text-white placeholder:text-white/25 text-sm focus:outline-none focus:ring-2 transition-colors disabled:opacity-50 ${
                     usernameStatus === "available"
                       ? "border-emerald-500/40 focus:ring-emerald-500/30 focus:border-emerald-500/40"
-                      : usernameStatus === "taken" || usernameStatus === "invalid"
+                      : usernameStatus === "taken" ||
+                          usernameStatus === "invalid"
                         ? "border-red-500/40 focus:ring-red-500/30 focus:border-red-500/40"
                         : "border-white/10 focus:ring-primary/50 focus:border-primary/50"
                   }`}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   {usernameStatus === "checking" && (
-                    <svg className="size-4 text-white/30 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    <svg
+                      className="size-4 text-white/30 animate-spin"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
                     </svg>
                   )}
                   {usernameStatus === "available" && (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4 text-emerald-400">
-                      <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="size-4 text-emerald-400"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   )}
-                  {(usernameStatus === "taken" || usernameStatus === "invalid") && (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="size-4 text-red-400">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+                  {(usernameStatus === "taken" ||
+                    usernameStatus === "invalid") && (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className="size-4 text-red-400"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   )}
                 </div>
               </div>
               {usernameHint ? (
-                <p className={`text-xs ${
-                  usernameStatus === "available" ? "text-emerald-400/70" :
-                  usernameStatus === "taken" || usernameStatus === "invalid" ? "text-red-400/70" :
-                  "text-white/25"
-                }`}>
+                <p
+                  className={`text-xs ${
+                    usernameStatus === "available"
+                      ? "text-emerald-400/70"
+                      : usernameStatus === "taken" ||
+                          usernameStatus === "invalid"
+                        ? "text-red-400/70"
+                        : "text-white/25"
+                  }`}
+                >
                   {usernameHint}
                 </p>
               ) : (

@@ -70,6 +70,34 @@ export default async function GameDetailPage({
     where: eq(game.igdbId, igdbId),
   });
 
+  const STALE_MS = 7 * 24 * 60 * 60 * 1000;
+  const now = new Date();
+  const isStale =
+    cached &&
+    (!cached.updatedAt ||
+      now.getTime() - new Date(cached.updatedAt).getTime() > STALE_MS);
+
+  if (isStale) {
+    fetchIGDBGame(igdbId)
+      .then(async (fresh) => {
+        if (!fresh) return;
+        await db
+          .update(game)
+          .set({
+            title: fresh.title,
+            slug: fresh.slug,
+            coverImageId: fresh.coverImageId,
+            genres: fresh.genres.join(", ") || null,
+            platforms: fresh.platforms.join(", ") || null,
+            releaseDate: fresh.releaseDate,
+            summary: fresh.summary,
+            popularity: fresh.popularity,
+          })
+          .where(eq(game.id, cached.id));
+      })
+      .catch(() => {});
+  }
+
   const meta = cached
     ? {
         igdbId: cached.igdbId,
@@ -191,9 +219,7 @@ export default async function GameDetailPage({
                   user{totalUsers !== 1 ? "s" : ""} tracking this game
                 </p>
                 {CATEGORIES.map((cat) => {
-                  const stat = categoryStats.find(
-                    (s) => s.category === cat.id,
-                  );
+                  const stat = categoryStats.find((s) => s.category === cat.id);
                   const catCount = stat?.count ?? 0;
                   const pct =
                     totalUsers > 0
@@ -228,31 +254,35 @@ export default async function GameDetailPage({
               <p className="text-white/30 text-sm">No users yet.</p>
             ) : (
               <div className="space-y-3">
-                {usersWithGame.filter((u) => u.username).map((u) => {
-                  const cat = CATEGORIES.find((c) => c.id === u.category);
-                  return (
-                    <Link
-                      key={u.username}
-                      href={`/u/${u.username}`}
-                      className="flex items-center gap-3 hover:bg-white/5 -mx-2 px-2 py-1.5 rounded-lg transition-colors"
-                    >
-                      <Avatar name={u.name} image={u.image} size="sm" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{u.name}</p>
-                      </div>
-                      {cat && (
-                        <span className={`text-[10px] ${cat.color}`}>
-                          {cat.label}
-                        </span>
-                      )}
-                      {u.rating && (
-                        <span className="text-[10px] text-amber-400 font-bold">
-                          ★ {u.rating}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
+                {usersWithGame
+                  .filter((u) => u.username)
+                  .map((u) => {
+                    const cat = CATEGORIES.find((c) => c.id === u.category);
+                    return (
+                      <Link
+                        key={u.username}
+                        href={`/u/${u.username}`}
+                        className="flex items-center gap-3 hover:bg-white/5 -mx-2 px-2 py-1.5 rounded-lg transition-colors"
+                      >
+                        <Avatar name={u.name} image={u.image} size="sm" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {u.name}
+                          </p>
+                        </div>
+                        {cat && (
+                          <span className={`text-[10px] ${cat.color}`}>
+                            {cat.label}
+                          </span>
+                        )}
+                        {u.rating && (
+                          <span className="text-[10px] text-amber-400 font-bold">
+                            ★ {u.rating}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
               </div>
             )}
           </div>

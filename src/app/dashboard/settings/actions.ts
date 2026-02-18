@@ -13,14 +13,16 @@ export async function updateProfile(formData: FormData) {
 
   const name = formData.get("name") as string;
   const rawUsername = (formData.get("username") as string)?.trim();
-  const username = rawUsername ? rawUsername.toLowerCase().replace(/[^a-z0-9_-]/g, "") : "";
+  const username = rawUsername
+    ? rawUsername.toLowerCase().replace(/[^a-z0-9_-]/g, "")
+    : "";
   const bio = formData.get("bio") as string;
 
   if (!name) throw new Error("Name is required");
 
   if (username && !/^[a-z0-9_-]{3,30}$/.test(username)) {
     throw new Error(
-      "Username must be 3-30 characters, lowercase letters, numbers, hyphens, or underscores only.",
+      "Username must be 3-30 characters, lowercase letters, numbers, hyphens, or underscores only."
     );
   }
 

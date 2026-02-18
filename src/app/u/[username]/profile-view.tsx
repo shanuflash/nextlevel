@@ -12,6 +12,7 @@ import {
 } from "@/src/lib/constants";
 import { updateGame, removeGame } from "@/src/app/dashboard/games/actions";
 import { toast } from "sonner";
+import { RatingSlider } from "@/src/components/rating-slider";
 
 interface GameItem {
   id: string;
@@ -68,6 +69,7 @@ function GameModal({
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [editCategory, setEditCategory] = useState(game.category);
+  const [editRating, setEditRating] = useState<number | null>(game.rating);
   const coverUrl = igdbCover(game.coverImageId, "t_cover_big");
   const cat = CATEGORIES.find((c) => c.id === game.category);
 
@@ -188,14 +190,10 @@ function GameModal({
                 <label className="text-xs text-white/40 block mb-1.5">
                   Rating (1-10)
                 </label>
-                <input
+                <RatingSlider
+                  value={editRating}
+                  onChange={setEditRating}
                   name="rating"
-                  type="number"
-                  min="1"
-                  max="10"
-                  step="0.5"
-                  defaultValue={game.rating ?? ""}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-white/20"
                 />
               </div>
 
@@ -258,7 +256,12 @@ function BentoHeader({ profile }: { profile: ProfileData }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
       <div className="md:col-span-2 bg-white/3 rounded-3xl border border-white/8 p-8 flex items-center gap-6">
-        <Avatar name={profile.displayName} image={profile.avatarUrl} size="lg" showRing />
+        <Avatar
+          name={profile.displayName}
+          image={profile.avatarUrl}
+          size="lg"
+          showRing
+        />
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             {profile.displayName}
@@ -311,15 +314,15 @@ function MasonryGrid({
   games: (GameItem & { categoryId: string; categoryLabel: string })[];
   activeCategory: string;
   onSelect: (
-    g: GameItem & { categoryId: string; categoryLabel: string },
+    g: GameItem & { categoryId: string; categoryLabel: string }
   ) => void;
 }) {
   // Distribute items round-robin into columns to preserve sort order
   // (CSS columns fills top-to-bottom per column, breaking sort order)
   const colCount = { base: 2, sm: 3, md: 4, lg: 5 };
-  const columns: typeof games[] = Array.from(
+  const columns: (typeof games)[] = Array.from(
     { length: colCount.lg },
-    () => [],
+    () => []
   );
   games.forEach((g, i) => columns[i % colCount.lg].push(g));
 
@@ -340,8 +343,7 @@ function MasonryGrid({
         >
           {col.map((g, i) => {
             // Use the global index for consistent aspect ratio assignment
-            const globalIdx =
-              i * colCount.lg + colIdx;
+            const globalIdx = i * colCount.lg + colIdx;
             const aspect = ASPECT_RATIOS[globalIdx % ASPECT_RATIOS.length];
             const coverUrl = igdbCover(g.coverImageId);
             const cat = CATEGORIES.find((c) => c.id === g.categoryId);

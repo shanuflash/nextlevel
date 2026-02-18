@@ -6,8 +6,8 @@ import { eq, count, desc } from "drizzle-orm";
 import Link from "next/link";
 import Image from "next/image";
 import { igdbCover } from "@/src/lib/igdb";
-import { CATEGORIES } from "@/src/lib/constants";
 import { ProfileUrlCopy } from "./profile-url-copy";
+import { DashboardStats } from "./dashboard-stats";
 
 function relativeDate(dateStr: string | null): string {
   if (!dateStr) return "";
@@ -74,6 +74,17 @@ export default async function DashboardPage() {
     categoryMap[c.category] = c.count;
   }
 
+  const popularGames = await db
+    .select({
+      igdbId: game.igdbId,
+      title: game.title,
+      coverImageId: game.coverImageId,
+      genres: game.genres,
+    })
+    .from(game)
+    .orderBy(desc(game.popularity))
+    .limit(10);
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -86,36 +97,11 @@ export default async function DashboardPage() {
         {username && <ProfileUrlCopy username={username} />}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="relative bg-white/3 rounded-2xl border border-white/8 p-5 overflow-hidden">
-          <div className="text-2xl font-bold text-primary">{totalGames}</div>
-          <div className="text-xs text-white/40 mt-1">Total Games</div>
-          <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-primary to-primary/80" />
-        </div>
-        {CATEGORIES.map((cat) => {
-          const bars: Record<string, string> = {
-            finished: "from-emerald-500 to-emerald-400",
-            playing: "from-blue-500 to-blue-400",
-            "want-to-play": "from-amber-500 to-amber-400",
-            "on-hold": "from-orange-500 to-orange-400",
-            dropped: "from-red-500 to-red-400",
-          };
-          return (
-            <div
-              key={cat.id}
-              className="relative bg-white/3 rounded-2xl border border-white/8 p-5 overflow-hidden"
-            >
-              <div className={`text-2xl font-bold ${cat.color}`}>
-                {categoryMap[cat.id] || 0}
-              </div>
-              <div className="text-xs text-white/40 mt-1">{cat.label}</div>
-              <div
-                className={`absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r ${bars[cat.id]}`}
-              />
-            </div>
-          );
-        })}
-      </div>
+      <DashboardStats
+        totalGames={totalGames}
+        categoryMap={categoryMap}
+        popularGames={popularGames}
+      />
 
       {/* Most Anticipated */}
       {hypeGames.length > 0 && (

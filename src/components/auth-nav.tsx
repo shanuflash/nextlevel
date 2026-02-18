@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { signOut } from "@/src/lib/auth-client";
 import { Avatar } from "@/src/components/avatar";
 
-
 interface AuthNavUser {
   name: string;
   image?: string;
