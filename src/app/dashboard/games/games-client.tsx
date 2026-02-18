@@ -18,6 +18,7 @@ export interface UserGameRow {
   slug: string;
   coverImageId: string | null;
   genre: string | null;
+  createdAt: Date;
 }
 
 function AddGameDialog({
@@ -784,11 +785,14 @@ function EditGameDialog({
   );
 }
 
+type SortBy = "newest" | "oldest";
+
 export function GamesClient({ games }: { games: UserGameRow[] }) {
   const [isShowingAdd, setIsShowingAdd] = useState(false);
   const [isShowingBulkAdd, setIsShowingBulkAdd] = useState(false);
   const [editingGame, setEditingGame] = useState<UserGameRow | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | "all">("all");
+  const [sortBy, setSortBy] = useState<SortBy>("newest");
 
   const existingIgdbIds = new Set(games.map((g) => g.igdbId));
 
@@ -796,6 +800,18 @@ export function GamesClient({ games }: { games: UserGameRow[] }) {
     activeCategory === "all"
       ? games
       : games.filter((g) => g.category === activeCategory);
+
+  const sorted = [...filtered].sort((a, b) => {
+    const aTime =
+      a.createdAt instanceof Date
+        ? a.createdAt.getTime()
+        : new Date(a.createdAt).getTime();
+    const bTime =
+      b.createdAt instanceof Date
+        ? b.createdAt.getTime()
+        : new Date(b.createdAt).getTime();
+    return sortBy === "newest" ? bTime - aTime : aTime - bTime;
+  });
 
   return (
     <div className="space-y-6">
@@ -822,33 +838,58 @@ export function GamesClient({ games }: { games: UserGameRow[] }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setActiveCategory("all")}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-            activeCategory === "all"
-              ? "bg-white/12 text-white border-white/20"
-              : "text-white/40 border-white/8 hover:text-white/60"
-          }`}
-        >
-          All ({games.length})
-        </button>
-        {CATEGORIES.map((cat) => {
-          const catCount = games.filter((g) => g.category === cat.id).length;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                activeCategory === cat.id
-                  ? cat.bg + " " + cat.color
-                  : "text-white/40 border-white/8 hover:text-white/60"
-              }`}
-            >
-              {cat.label} ({catCount})
-            </button>
-          );
-        })}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setActiveCategory("all")}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+              activeCategory === "all"
+                ? "bg-white/12 text-white border-white/20"
+                : "text-white/40 border-white/8 hover:text-white/60"
+            }`}
+          >
+            All ({games.length})
+          </button>
+          {CATEGORIES.map((cat) => {
+            const catCount = games.filter((g) => g.category === cat.id).length;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                  activeCategory === cat.id
+                    ? cat.bg + " " + cat.color
+                    : "text-white/40 border-white/8 hover:text-white/60"
+                }`}
+              >
+                {cat.label} ({catCount})
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-1.5 ml-auto">
+          <span className="text-[11px] text-white/30">Sort:</span>
+          <button
+            onClick={() => setSortBy("newest")}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
+              sortBy === "newest"
+                ? "bg-white/12 text-white border-white/20"
+                : "text-white/40 border-white/8 hover:text-white/60"
+            }`}
+          >
+            Newest
+          </button>
+          <button
+            onClick={() => setSortBy("oldest")}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
+              sortBy === "oldest"
+                ? "bg-white/12 text-white border-white/20"
+                : "text-white/40 border-white/8 hover:text-white/60"
+            }`}
+          >
+            Oldest
+          </button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -861,7 +902,7 @@ export function GamesClient({ games }: { games: UserGameRow[] }) {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {filtered.map((g) => {
+          {sorted.map((g) => {
             const cat = CATEGORIES.find((c) => c.id === g.category);
             const coverUrl = igdbCover(g.coverImageId);
             return (

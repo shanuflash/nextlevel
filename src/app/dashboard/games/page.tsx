@@ -24,6 +24,7 @@ export default async function GamesPage() {
       slug: game.slug,
       coverImageId: game.coverImageId,
       genre: game.genres,
+      createdAt: userGame.createdAt,
     })
     .from(userGame)
     .innerJoin(game, eq(userGame.gameId, game.id))
