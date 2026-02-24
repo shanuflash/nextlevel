@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/src/lib/auth";
 import { game } from "@/schema/game-schema";
-import { eq, gt, sql } from "drizzle-orm";
+import { eq, gt, inArray, sql } from "drizzle-orm";
 import { getIGDBToken, igdbHeaders } from "@/src/lib/igdb";
 import { verifyCronSecret } from "@/src/lib/cron";
 
@@ -24,53 +24,54 @@ interface IGDBRaw {
 const FIELDS =
   "name, slug, cover.image_id, genres.name, platforms.abbreviation, first_release_date, summary, total_rating_count, hypes";
 
-async function upsertGame(raw: IGDBRaw) {
-  const existing = await db.query.game.findFirst({
-    where: eq(game.igdbId, raw.id),
-  });
+function mapRawToValues(raw: IGDBRaw) {
+  return {
+    title: raw.name,
+    slug: raw.slug,
+    coverImageId: raw.cover?.image_id ?? null,
+    genres: raw.genres?.map((g) => g.name).join(", ") || null,
+    platforms:
+      raw.platforms
+        ?.map((p) => p.abbreviation)
+        .filter(Boolean)
+        .join(", ") || null,
+    releaseDate: raw.first_release_date
+      ? new Date(raw.first_release_date * 1000).toISOString().split("T")[0]
+      : null,
+    summary: raw.summary ?? null,
+    popularity: (raw.total_rating_count ?? 0) + (raw.hypes ?? 0) * 10,
+  };
+}
 
-  const genres = raw.genres?.map((g) => g.name).join(", ") || null;
-  const platforms =
-    raw.platforms
-      ?.map((p) => p.abbreviation)
-      .filter(Boolean)
-      .join(", ") || null;
-  const releaseDate = raw.first_release_date
-    ? new Date(raw.first_release_date * 1000).toISOString().split("T")[0]
-    : null;
-  const popularity = (raw.total_rating_count ?? 0) + (raw.hypes ?? 0) * 10;
+async function batchUpsertGames(
+  rawGames: IGDBRaw[]
+): Promise<Map<number, string>> {
+  if (rawGames.length === 0) return new Map();
 
-  if (existing) {
-    await db
-      .update(game)
-      .set({
-        title: raw.name,
-        slug: raw.slug,
-        coverImageId: raw.cover?.image_id ?? null,
-        genres,
-        platforms,
-        releaseDate,
-        summary: raw.summary ?? null,
-        popularity,
-      })
-      .where(eq(game.id, existing.id));
-    return existing.id;
-  } else {
-    const id = crypto.randomUUID();
-    await db.insert(game).values({
-      id,
-      igdbId: raw.id,
-      title: raw.name,
-      slug: raw.slug,
-      coverImageId: raw.cover?.image_id ?? null,
-      genres,
-      platforms,
-      releaseDate,
-      summary: raw.summary ?? null,
-      popularity,
-    });
-    return id;
+  const igdbIds = rawGames.map((r) => r.id);
+  const existing = await db
+    .select({ id: game.id, igdbId: game.igdbId })
+    .from(game)
+    .where(inArray(game.igdbId, igdbIds));
+
+  const existingMap = new Map(existing.map((g) => [g.igdbId, g.id]));
+  const result = new Map<number, string>();
+
+  for (const raw of rawGames) {
+    const existingId = existingMap.get(raw.id);
+    const values = mapRawToValues(raw);
+
+    if (existingId) {
+      await db.update(game).set(values).where(eq(game.id, existingId));
+      result.set(raw.id, existingId);
+    } else {
+      const id = crypto.randomUUID();
+      await db.insert(game).values({ id, igdbId: raw.id, ...values });
+      result.set(raw.id, id);
+    }
   }
+
+  return result;
 }
 
 export async function GET(req: NextRequest) {
@@ -84,42 +85,47 @@ export async function GET(req: NextRequest) {
     const now = Math.floor(Date.now() / 1000);
     const ninetyDaysAgo = now - 90 * 24 * 60 * 60;
 
-    const hypeRes = await fetch("https://api.igdb.com/v4/games", {
-      method: "POST",
-      headers,
-      body: `fields ${FIELDS};\nwhere hypes > 0 & first_release_date > ${now} & cover != null;\nsort hypes desc;\nlimit 5;`,
-    });
-    const hypeGames: IGDBRaw[] = hypeRes.ok ? await hypeRes.json() : [];
+    const [hypeRes, recentRes] = await Promise.all([
+      fetch("https://api.igdb.com/v4/games", {
+        method: "POST",
+        headers,
+        body: `fields ${FIELDS};\nwhere hypes > 0 & first_release_date > ${now} & cover != null;\nsort hypes desc;\nlimit 5;`,
+      }),
+      fetch("https://api.igdb.com/v4/games", {
+        method: "POST",
+        headers,
+        body: `fields ${FIELDS};\nwhere first_release_date > ${ninetyDaysAgo} & first_release_date < ${now} & cover != null & total_rating_count > 0;\nsort total_rating_count desc;\nlimit 5;`,
+      }),
+    ]);
 
-    const recentRes = await fetch("https://api.igdb.com/v4/games", {
-      method: "POST",
-      headers,
-      body: `fields ${FIELDS};\nwhere first_release_date > ${ninetyDaysAgo} & first_release_date < ${now} & cover != null & total_rating_count > 0;\nsort total_rating_count desc;\nlimit 5;`,
-    });
+    const hypeGames: IGDBRaw[] = hypeRes.ok ? await hypeRes.json() : [];
     const recentGames: IGDBRaw[] = recentRes.ok ? await recentRes.json() : [];
 
     await db.run(
       sql`UPDATE game SET is_featured_anticipated = 0, is_featured_released = 0`
     );
 
-    let anticipatedCount = 0;
-    for (const raw of hypeGames) {
-      const gameId = await upsertGame(raw);
+    const allRaw = [...hypeGames, ...recentGames];
+    const idMap = await batchUpsertGames(allRaw);
+
+    const anticipatedIds = hypeGames
+      .map((r) => idMap.get(r.id))
+      .filter((id): id is string => !!id);
+    const releasedIds = recentGames
+      .map((r) => idMap.get(r.id))
+      .filter((id): id is string => !!id);
+
+    if (anticipatedIds.length > 0) {
       await db
         .update(game)
         .set({ isFeaturedAnticipated: true })
-        .where(eq(game.id, gameId));
-      anticipatedCount++;
+        .where(inArray(game.id, anticipatedIds));
     }
-
-    let releasedCount = 0;
-    for (const raw of recentGames) {
-      const gameId = await upsertGame(raw);
+    if (releasedIds.length > 0) {
       await db
         .update(game)
         .set({ isFeaturedReleased: true })
-        .where(eq(game.id, gameId));
-      releasedCount++;
+        .where(inArray(game.id, releasedIds));
     }
 
     const todayStr = new Date().toISOString().split("T")[0];
@@ -130,14 +136,11 @@ export async function GET(req: NextRequest) {
 
     let releaseDateUpdates = 0;
     if (upcomingGames.length > 0) {
-      const upcomingChunks: number[][] = [];
       const upcomingIds = upcomingGames.map((g) => g.igdbId);
-      for (let i = 0; i < upcomingIds.length; i += 500) {
-        upcomingChunks.push(upcomingIds.slice(i, i + 500));
-      }
-
       const dateMap = new Map<number, string | null>();
-      for (const chunk of upcomingChunks) {
+
+      for (let i = 0; i < upcomingIds.length; i += 500) {
+        const chunk = upcomingIds.slice(i, i + 500);
         const ids = chunk.join(",");
         const res = await fetch("https://api.igdb.com/v4/games", {
           method: "POST",
@@ -159,22 +162,29 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      for (const g of upcomingGames) {
-        const freshDate = dateMap.get(g.igdbId);
-        if (freshDate !== undefined) {
-          await db
+      const dateUpdates = upcomingGames
+        .filter((g) => dateMap.has(g.igdbId))
+        .map((g) =>
+          db
             .update(game)
-            .set({ releaseDate: freshDate })
-            .where(eq(game.id, g.id));
-          releaseDateUpdates++;
+            .set({ releaseDate: dateMap.get(g.igdbId)! })
+            .where(eq(game.id, g.id))
+        );
+
+      if (dateUpdates.length > 0) {
+        const BATCH_SIZE = 100;
+        for (let i = 0; i < dateUpdates.length; i += BATCH_SIZE) {
+          const slice = dateUpdates.slice(i, i + BATCH_SIZE);
+          await db.batch(slice as [(typeof slice)[0], ...typeof slice]);
         }
+        releaseDateUpdates = dateUpdates.length;
       }
     }
 
     return NextResponse.json({
-      message: `Updated ${anticipatedCount} anticipated, ${releasedCount} released, ${releaseDateUpdates} release dates refreshed`,
-      anticipated: anticipatedCount,
-      released: releasedCount,
+      message: `Updated ${anticipatedIds.length} anticipated, ${releasedIds.length} released, ${releaseDateUpdates} release dates refreshed`,
+      anticipated: anticipatedIds.length,
+      released: releasedIds.length,
       releaseDateUpdates,
     });
   } catch (e) {

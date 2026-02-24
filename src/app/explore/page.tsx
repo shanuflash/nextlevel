@@ -4,9 +4,8 @@ import { user } from "@/schema/auth-schema";
 import { userGame, game } from "@/schema/game-schema";
 import { desc, count, eq, sql } from "drizzle-orm";
 import Link from "next/link";
-import Image from "next/image";
-import { igdbCover } from "@/src/lib/igdb";
 import { Avatar } from "@/src/components/avatar";
+import { GameCard } from "@/src/components/game-card";
 
 import { PublicNav } from "@/src/components/public-nav";
 
@@ -16,34 +15,35 @@ export const metadata: Metadata = {
 };
 
 export default async function ExplorePage() {
-  const usersWithGames = await db
-    .select({
-      name: user.name,
-      username: user.username,
-      image: user.image,
-      bio: user.bio,
-      gameCount: count(userGame.id),
-    })
-    .from(user)
-    .leftJoin(userGame, eq(user.id, userGame.userId))
-    .groupBy(user.id)
-    .having(sql`count(${userGame.id}) > 0`)
-    .orderBy(desc(count(userGame.id)))
-    .limit(20);
-
-  const popularGames = await db
-    .select({
-      gameId: game.id,
-      igdbId: game.igdbId,
-      title: game.title,
-      coverImageId: game.coverImageId,
-      userCount: count(userGame.id),
-    })
-    .from(game)
-    .innerJoin(userGame, eq(game.id, userGame.gameId))
-    .groupBy(game.id)
-    .orderBy(desc(count(userGame.id)))
-    .limit(12);
+  const [usersWithGames, popularGames] = await Promise.all([
+    db
+      .select({
+        name: user.name,
+        username: user.username,
+        image: user.image,
+        bio: user.bio,
+        gameCount: count(userGame.id),
+      })
+      .from(user)
+      .leftJoin(userGame, eq(user.id, userGame.userId))
+      .groupBy(user.id)
+      .having(sql`count(${userGame.id}) > 0`)
+      .orderBy(desc(count(userGame.id)))
+      .limit(20),
+    db
+      .select({
+        gameId: game.id,
+        igdbId: game.igdbId,
+        title: game.title,
+        coverImageId: game.coverImageId,
+        userCount: count(userGame.id),
+      })
+      .from(game)
+      .innerJoin(userGame, eq(game.id, userGame.gameId))
+      .groupBy(game.id)
+      .orderBy(desc(count(userGame.id)))
+      .limit(12),
+  ]);
 
   return (
     <div className="min-h-screen bg-[#09090d] text-white">
@@ -67,38 +67,16 @@ export default async function ExplorePage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {popularGames.map((g) => {
-                const cover = igdbCover(g.coverImageId);
-                return (
-                  <Link
-                    key={g.gameId}
-                    href={`/game/${g.igdbId}`}
-                    className="group"
-                  >
-                    <div className="relative aspect-3/4 overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/20">
-                      {cover ? (
-                        <Image
-                          src={cover}
-                          alt={g.title}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
-                        />
-                      ) : (
-                        <div className="size-full bg-white/5" />
-                      )}
-                      <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent p-3 pt-8">
-                        <p className="text-xs font-semibold leading-tight line-clamp-2">
-                          {g.title}
-                        </p>
-                        <p className="text-[10px] text-white/40 mt-0.5">
-                          {g.userCount} user{g.userCount !== 1 ? "s" : ""}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+              {popularGames.map((g) => (
+                <GameCard
+                  key={g.gameId}
+                  href={`/game/${g.igdbId}`}
+                  title={g.title}
+                  coverImageId={g.coverImageId}
+                  subtitle={`${g.userCount} user${g.userCount !== 1 ? "s" : ""}`}
+                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
+                />
+              ))}
             </div>
           )}
         </section>

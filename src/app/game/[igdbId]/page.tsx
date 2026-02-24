@@ -2,15 +2,17 @@ import type { Metadata } from "next";
 import { db } from "@/src/lib/auth";
 import { game, userGame } from "@/schema/game-schema";
 import { user } from "@/schema/auth-schema";
-import { eq, count } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { fetchIGDBGame, igdbCover } from "@/src/lib/igdb";
+import { getSession } from "@/src/lib/session";
 
 import { PublicNav } from "@/src/components/public-nav";
 import { Avatar } from "@/src/components/avatar";
 import { CATEGORIES } from "@/src/lib/constants";
+import { GameAddButton } from "./game-add-button";
 
 export async function generateMetadata({
   params,
@@ -115,31 +117,47 @@ export default async function GameDetailPage({
 
   const coverUrl = igdbCover(meta.coverImageId);
 
+  const session = await getSession();
+
   let categoryStats: CategoryStat[] = [];
   let usersWithGame: GameUser[] = [];
+  let existingCategory: string | null = null;
 
   if (cached) {
-    categoryStats = await db
-      .select({
-        category: userGame.category,
-        count: count(),
-      })
-      .from(userGame)
-      .where(eq(userGame.gameId, cached.id))
-      .groupBy(userGame.category);
-
-    usersWithGame = await db
-      .select({
-        name: user.name,
-        username: user.username,
-        image: user.image,
-        category: userGame.category,
-        rating: userGame.rating,
-      })
-      .from(userGame)
-      .innerJoin(user, eq(userGame.userId, user.id))
-      .where(eq(userGame.gameId, cached.id))
-      .limit(10);
+    const [stats, users, existing] = await Promise.all([
+      db
+        .select({
+          category: userGame.category,
+          count: count(),
+        })
+        .from(userGame)
+        .where(eq(userGame.gameId, cached.id))
+        .groupBy(userGame.category),
+      db
+        .select({
+          name: user.name,
+          username: user.username,
+          image: user.image,
+          category: userGame.category,
+          rating: userGame.rating,
+        })
+        .from(userGame)
+        .innerJoin(user, eq(userGame.userId, user.id))
+        .where(eq(userGame.gameId, cached.id))
+        .limit(10),
+      session
+        ? db.query.userGame.findFirst({
+            where: and(
+              eq(userGame.userId, session.user.id),
+              eq(userGame.gameId, cached.id)
+            ),
+            columns: { category: true },
+          })
+        : null,
+    ]);
+    categoryStats = stats;
+    usersWithGame = users;
+    existingCategory = existing?.category ?? null;
   }
 
   const totalUsers = categoryStats.reduce((sum, c) => sum + c.count, 0);
@@ -193,12 +211,11 @@ export default async function GameDetailPage({
               </p>
             )}
             <div className="mt-6">
-              <Link
-                href="/dashboard/games"
-                className="inline-flex px-5 py-2.5 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
-              >
-                + Add to My Library
-              </Link>
+              <GameAddButton
+                igdbId={igdbId}
+                isLoggedIn={!!session}
+                existingCategory={existingCategory}
+              />
             </div>
           </div>
         </div>

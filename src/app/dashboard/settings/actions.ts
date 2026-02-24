@@ -19,6 +19,9 @@ export async function updateProfile(formData: FormData) {
   const bio = formData.get("bio") as string;
 
   if (!name) throw new Error("Name is required");
+  if (name.length > 50) throw new Error("Name must be 50 characters or less");
+  if (bio && bio.length > 200)
+    throw new Error("Bio must be 200 characters or less");
 
   if (username && !/^[a-z0-9_-]{3,30}$/.test(username)) {
     throw new Error(

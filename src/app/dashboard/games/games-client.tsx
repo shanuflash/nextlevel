@@ -8,19 +8,9 @@ import { igdbCover, type IGDBGameMeta } from "@/src/lib/igdb";
 import { CATEGORIES } from "@/src/lib/constants";
 import { toast } from "sonner";
 import { RatingSlider } from "@/src/components/rating-slider";
+import type { UserGameRow } from "@/src/lib/types";
 
-export interface UserGameRow {
-  id: string;
-  category: string;
-  rating: number | null;
-  gameId: string;
-  igdbId: number;
-  title: string;
-  slug: string;
-  coverImageId: string | null;
-  genre: string | null;
-  createdAt: Date;
-}
+export type { UserGameRow };
 
 function AddGameDialog({
   onClose,

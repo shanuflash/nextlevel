@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { PublicNav } from "@/src/components/public-nav";
 import { ProfileView } from "./profile-view";
 import { getSession } from "@/src/lib/session";
+import { CATEGORIES } from "@/src/lib/constants";
 
 export async function generateMetadata({
   params,
@@ -87,15 +88,7 @@ export default async function ProfilePage({
     .where(eq(userGame.userId, dbUser.id))
     .orderBy(desc(game.popularity));
 
-  const categoryDefs = [
-    { id: "finished", label: "Finished" },
-    { id: "playing", label: "Playing" },
-    { id: "want-to-play", label: "Want to Play" },
-    { id: "on-hold", label: "On Hold" },
-    { id: "dropped", label: "Dropped" },
-  ];
-
-  const categories = categoryDefs
+  const categories = CATEGORIES
     .map((cat) => ({
       ...cat,
       games: userGames.filter((g) => g.category === cat.id),

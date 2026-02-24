@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { igdbCover } from "@/src/lib/igdb";
@@ -406,30 +406,31 @@ export function ProfileView({
     (GameItem & { categoryId: string; categoryLabel: string }) | null
   >(null);
 
-  const filteredGames =
-    activeCategory === "all"
-      ? profile.categories
-          .flatMap((cat) =>
-            cat.games.map((g) => ({
-              ...g,
-              categoryId: cat.id,
-              categoryLabel: cat.label,
-            }))
-          )
-          .sort((a, b) => {
-            const aPlaying = a.categoryId === "playing" ? 0 : 1;
-            const bPlaying = b.categoryId === "playing" ? 0 : 1;
-            return aPlaying - bPlaying;
-          })
-      : (profile.categories
-          .find((c) => c.id === activeCategory)
-          ?.games.map((g) => ({
+  const filteredGames = useMemo(() => {
+    if (activeCategory === "all") {
+      return profile.categories
+        .flatMap((cat) =>
+          cat.games.map((g) => ({
             ...g,
-            categoryId: activeCategory,
-            categoryLabel:
-              profile.categories.find((c) => c.id === activeCategory)?.label ??
-              "",
-          })) ?? []);
+            categoryId: cat.id,
+            categoryLabel: cat.label,
+          })),
+        )
+        .sort((a, b) => {
+          const aPlaying = a.categoryId === "playing" ? 0 : 1;
+          const bPlaying = b.categoryId === "playing" ? 0 : 1;
+          return aPlaying - bPlaying;
+        });
+    }
+    const cat = profile.categories.find((c) => c.id === activeCategory);
+    return (
+      cat?.games.map((g) => ({
+        ...g,
+        categoryId: cat.id,
+        categoryLabel: cat.label,
+      })) ?? []
+    );
+  }, [activeCategory, profile.categories]);
 
   return (
     <>

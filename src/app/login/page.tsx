@@ -127,6 +127,11 @@ export default function LoginPage() {
             </button>
           </form>
 
+          <p className="text-center text-xs text-white/25">
+            Forgot your password? Sign in with Google or GitHub, then set a new
+            password in <span className="text-white/40">Settings</span>.
+          </p>
+
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-white/8" />

@@ -3,11 +3,9 @@ import { db } from "@/src/lib/auth";
 import { game, userGame } from "@/schema/game-schema";
 import { user } from "@/schema/auth-schema";
 import { eq, count, desc } from "drizzle-orm";
-import Link from "next/link";
-import Image from "next/image";
-import { igdbCover } from "@/src/lib/igdb";
 import { ProfileUrlCopy } from "./profile-url-copy";
 import { DashboardStats } from "./dashboard-stats";
+import { GameCard } from "@/src/components/game-card";
 
 function relativeDate(dateStr: string | null): string {
   if (!dateStr) return "";
@@ -38,32 +36,43 @@ export default async function DashboardPage() {
 
   const userId = session.user.id;
 
-  const [categoryCounts, hypeGames, recentGames, dbUser] = await Promise.all([
-    db
-      .select({
-        category: userGame.category,
-        count: count(),
-      })
-      .from(userGame)
-      .where(eq(userGame.userId, userId))
-      .groupBy(userGame.category),
-    db
-      .select()
-      .from(game)
-      .where(eq(game.isFeaturedAnticipated, true))
-      .orderBy(desc(game.popularity))
-      .limit(5),
-    db
-      .select()
-      .from(game)
-      .where(eq(game.isFeaturedReleased, true))
-      .orderBy(desc(game.popularity))
-      .limit(5),
-    db.query.user.findFirst({
-      where: eq(user.id, userId),
-      columns: { username: true },
-    }),
-  ]);
+  const [categoryCounts, hypeGames, recentGames, dbUser, popularGames] =
+    await Promise.all([
+      db
+        .select({
+          category: userGame.category,
+          count: count(),
+        })
+        .from(userGame)
+        .where(eq(userGame.userId, userId))
+        .groupBy(userGame.category),
+      db
+        .select()
+        .from(game)
+        .where(eq(game.isFeaturedAnticipated, true))
+        .orderBy(desc(game.popularity))
+        .limit(5),
+      db
+        .select()
+        .from(game)
+        .where(eq(game.isFeaturedReleased, true))
+        .orderBy(desc(game.popularity))
+        .limit(5),
+      db.query.user.findFirst({
+        where: eq(user.id, userId),
+        columns: { username: true },
+      }),
+      db
+        .select({
+          igdbId: game.igdbId,
+          title: game.title,
+          coverImageId: game.coverImageId,
+          genres: game.genres,
+        })
+        .from(game)
+        .orderBy(desc(game.popularity))
+        .limit(10),
+    ]);
 
   const username = dbUser?.username;
 
@@ -73,17 +82,6 @@ export default async function DashboardPage() {
   for (const c of categoryCounts) {
     categoryMap[c.category] = c.count;
   }
-
-  const popularGames = await db
-    .select({
-      igdbId: game.igdbId,
-      title: game.title,
-      coverImageId: game.coverImageId,
-      genres: game.genres,
-    })
-    .from(game)
-    .orderBy(desc(game.popularity))
-    .limit(10);
 
   return (
     <div className="space-y-8">
@@ -103,104 +101,56 @@ export default async function DashboardPage() {
         popularGames={popularGames}
       />
 
-      {/* Most Anticipated */}
       {hypeGames.length > 0 && (
         <div>
           <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">
             Most Anticipated
           </h2>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-            {hypeGames.map((g) => {
-              const coverUrl = igdbCover(g.coverImageId, "t_cover_big_2x");
-              const firstGenre = g.genres?.split(", ")[0];
-              return (
-                <Link
-                  key={g.igdbId}
-                  href={`/game/${g.igdbId}`}
-                  className="group relative"
-                >
-                  <div className="relative aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/25 group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40">
-                    {coverUrl ? (
-                      <Image
-                        src={coverUrl}
-                        alt={g.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 33vw, 20vw"
-                      />
-                    ) : (
-                      <div className="size-full bg-white/5" />
-                    )}
-                    {g.releaseDate && (
-                      <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-emerald-400 text-[10px] font-bold px-1.5 py-0.5 rounded-lg">
-                        {relativeDate(g.releaseDate)}
-                      </div>
-                    )}
-                    <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/50 to-transparent p-3 pt-12">
-                      <p className="text-xs font-semibold leading-tight line-clamp-2">
-                        {g.title}
-                      </p>
-                      {firstGenre && (
-                        <p className="text-[10px] mt-0.5 text-white/40">
-                          {firstGenre}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+            {hypeGames.map((g) => (
+              <GameCard
+                key={g.igdbId}
+                href={`/game/${g.igdbId}`}
+                title={g.title}
+                coverImageId={g.coverImageId}
+                subtitle={g.genres?.split(", ")[0]}
+                badge={
+                  g.releaseDate
+                    ? {
+                        text: relativeDate(g.releaseDate),
+                        className: "bg-black/70 text-emerald-400",
+                      }
+                    : undefined
+                }
+              />
+            ))}
           </div>
         </div>
       )}
 
-      {/* Recently Released */}
       {recentGames.length > 0 && (
         <div>
           <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">
             Recently Released
           </h2>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-            {recentGames.map((g) => {
-              const coverUrl = igdbCover(g.coverImageId, "t_cover_big_2x");
-              const genreList = g.genres?.split(", ").slice(0, 2).join(" · ");
-              return (
-                <Link
-                  key={g.igdbId}
-                  href={`/game/${g.igdbId}`}
-                  className="group relative"
-                >
-                  <div className="relative aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/25 group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40">
-                    {coverUrl ? (
-                      <Image
-                        src={coverUrl}
-                        alt={g.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 33vw, 20vw"
-                      />
-                    ) : (
-                      <div className="size-full bg-white/5" />
-                    )}
-                    {g.releaseDate && (
-                      <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-blue-400 text-[10px] font-bold px-1.5 py-0.5 rounded-lg">
-                        {relativeDate(g.releaseDate)}
-                      </div>
-                    )}
-                    <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/50 to-transparent p-3 pt-12">
-                      <p className="text-xs font-semibold leading-tight line-clamp-2">
-                        {g.title}
-                      </p>
-                      {genreList && (
-                        <p className="text-[10px] mt-0.5 text-white/40">
-                          {genreList}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+            {recentGames.map((g) => (
+              <GameCard
+                key={g.igdbId}
+                href={`/game/${g.igdbId}`}
+                title={g.title}
+                coverImageId={g.coverImageId}
+                subtitle={g.genres?.split(", ").slice(0, 2).join(" · ")}
+                badge={
+                  g.releaseDate
+                    ? {
+                        text: relativeDate(g.releaseDate),
+                        className: "bg-black/70 text-blue-400",
+                      }
+                    : undefined
+                }
+              />
+            ))}
           </div>
         </div>
       )}

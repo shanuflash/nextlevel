@@ -4,6 +4,7 @@ export interface CategoryDef {
   color: string;
   bg: string;
   bar: string;
+  gradient: string;
 }
 
 export const CATEGORIES: CategoryDef[] = [
@@ -13,6 +14,7 @@ export const CATEGORIES: CategoryDef[] = [
     color: "text-emerald-400",
     bg: "bg-emerald-500/15 border-emerald-500/25",
     bar: "bg-emerald-500",
+    gradient: "from-emerald-500 to-emerald-400",
   },
   {
     id: "playing",
@@ -20,6 +22,7 @@ export const CATEGORIES: CategoryDef[] = [
     color: "text-blue-400",
     bg: "bg-blue-500/15 border-blue-500/25",
     bar: "bg-blue-500",
+    gradient: "from-blue-500 to-blue-400",
   },
   {
     id: "want-to-play",
@@ -27,6 +30,7 @@ export const CATEGORIES: CategoryDef[] = [
     color: "text-amber-400",
     bg: "bg-amber-500/15 border-amber-500/25",
     bar: "bg-amber-500",
+    gradient: "from-amber-500 to-amber-400",
   },
   {
     id: "on-hold",
@@ -34,6 +38,7 @@ export const CATEGORIES: CategoryDef[] = [
     color: "text-orange-400",
     bg: "bg-orange-500/15 border-orange-500/25",
     bar: "bg-orange-500",
+    gradient: "from-orange-500 to-orange-400",
   },
   {
     id: "dropped",
@@ -41,6 +46,7 @@ export const CATEGORIES: CategoryDef[] = [
     color: "text-red-400",
     bg: "bg-red-500/15 border-red-500/25",
     bar: "bg-red-500",
+    gradient: "from-red-500 to-red-400",
   },
 ];
 

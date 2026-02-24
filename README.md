@@ -73,3 +73,76 @@ Two Vercel cron jobs keep game data fresh:
 ### Game Data
 
 All game metadata comes from the [IGDB API](https://www.igdb.com/api). The app caches game data locally to avoid repeated API calls. Cover images are served directly from the IGDB CDN.
+
+## Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 20+
+- [pnpm](https://pnpm.io/) (recommended) or npm
+- A [Turso](https://turso.tech/) database
+- [Twitch Developer](https://dev.twitch.tv/console) credentials (for IGDB API access)
+- OAuth credentials for [Google](https://console.cloud.google.com/) and/or [GitHub](https://github.com/settings/developers) (optional, for social login)
+
+### Installation
+
+```bash
+git clone https://github.com/your-username/nextlevel.git
+cd nextlevel
+pnpm install
+```
+
+### Environment Variables
+
+Create a `.env.local` file in the project root:
+
+```env
+# Database (Turso)
+TURSO_DATABASE_URL=libsql://your-db.turso.io
+TURSO_AUTH_TOKEN=your-turso-auth-token
+
+# IGDB / Twitch (required for game search)
+TWITCH_CLIENT_ID=your-twitch-client-id
+TWITCH_CLIENT_SECRET=your-twitch-client-secret
+
+# OAuth providers (optional)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# Cron job protection
+CRON_SECRET=any-random-secret-string
+
+# App URL (optional, used on landing page)
+NEXT_PUBLIC_APP_URL=nextlevel.shanu.dev
+```
+
+### Database Setup
+
+Push the Drizzle schema to your Turso database:
+
+```bash
+npx drizzle-kit push
+```
+
+Or run migrations:
+
+```bash
+npx drizzle-kit migrate
+```
+
+### Development
+
+```bash
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+### Production Build
+
+```bash
+pnpm build
+pnpm start
+```

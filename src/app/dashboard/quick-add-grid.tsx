@@ -6,13 +6,7 @@ import Link from "next/link";
 import { igdbCover } from "@/src/lib/igdb";
 import { addGame } from "./games/actions";
 import { toast } from "sonner";
-
-interface PopularGame {
-  igdbId: number;
-  title: string;
-  coverImageId: string | null;
-  genres: string | null;
-}
+import type { PopularGame } from "@/src/lib/types";
 
 export function QuickAddGrid({ games }: { games: PopularGame[] }) {
   const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
@@ -85,7 +79,7 @@ export function QuickAddGrid({ games }: { games: PopularGame[] }) {
                     : "bg-black/70 text-white hover:bg-primary/80"
                 } disabled:cursor-not-allowed`}
               >
-                {loading ? "..." : added ? "Added" : "+ Add"}
+                {loading ? "..." : added ? "Added" : "+ Want to Play"}
               </button>
             </div>
           );

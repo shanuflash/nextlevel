@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getIGDBToken, igdbHeaders, type IGDBGameMeta } from "@/src/lib/igdb";
+import { getSession } from "@/src/lib/session";
+
+const CACHE_TTL_MS = 60_000;
+const searchCache = new Map<
+  string,
+  { data: IGDBGameMeta[]; expiresAt: number }
+>();
 
 interface IGDBRawSearchResult {
   id: number;
@@ -70,8 +77,19 @@ async function igdbFetch(
 }
 
 export async function GET(req: NextRequest) {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const query = req.nextUrl.searchParams.get("q");
   if (!query || query.length < 1) return NextResponse.json([]);
+
+  const cacheKey = query.trim().toLowerCase();
+  const cached = searchCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return NextResponse.json(cached.data);
+  }
 
   try {
     const token = await getIGDBToken();
@@ -98,7 +116,13 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json(games.map(mapResult));
+    const results = games.map(mapResult);
+    searchCache.set(cacheKey, {
+      data: results,
+      expiresAt: Date.now() + CACHE_TTL_MS,
+    });
+
+    return NextResponse.json(results);
   } catch (e) {
     console.error("IGDB search error:", e);
     return NextResponse.json({ error: "Search failed" }, { status: 500 });
