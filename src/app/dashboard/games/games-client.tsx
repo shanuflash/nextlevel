@@ -91,12 +91,12 @@ function AddGameDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-      <div className="bg-[#12121a] border border-white/10 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-surface-elevated border border-white/10 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-6 pb-0">
           <h2 className="text-lg font-semibold">Add Game</h2>
           <button
             onClick={onClose}
-            className="text-white/30 hover:text-white/60 text-lg"
+            className="size-10 flex items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors -mr-2"
           >
             ✕
           </button>
@@ -403,7 +403,7 @@ function BulkAddDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-      <div className="bg-[#12121a] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-surface-elevated border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-6 pb-0">
           <div>
             <h2 className="text-lg font-semibold">Bulk Add Games</h2>
@@ -413,7 +413,7 @@ function BulkAddDialog({
           </div>
           <button
             onClick={onClose}
-            className="text-white/30 hover:text-white/60 text-lg"
+            className="size-10 flex items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors -mr-2 flex-none"
           >
             ✕
           </button>
@@ -632,7 +632,7 @@ function EditGameDialog({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[#12121a] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-surface-elevated border border-white/10 rounded-2xl w-full max-w-md overflow-hidden">
         <div className="relative aspect-video overflow-hidden bg-white/5">
           {coverUrl ? (
             <Image
@@ -645,10 +645,10 @@ function EditGameDialog({
           ) : (
             <div className="size-full bg-white/5" />
           )}
-          <div className="absolute inset-0 bg-linear-to-t from-[#12121a] via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-surface-elevated via-transparent to-transparent" />
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 size-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white transition-colors"
+            className="absolute top-3 right-3 size-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white transition-colors"
           >
             ✕
           </button>
@@ -797,7 +797,7 @@ export function GamesClient({ games }: { games: UserGameRow[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">My Games</h1>
           <p className="text-white/40 text-sm mt-1">
@@ -893,7 +893,7 @@ export function GamesClient({ games }: { games: UserGameRow[] }) {
                 onClick={() => setEditingGame(g)}
                 className="group relative text-left"
               >
-                <div className="relative aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/20 group-hover:-translate-y-0.5">
+                <div className="relative aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/25 group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40">
                   {coverUrl ? (
                     <Image
                       src={coverUrl}

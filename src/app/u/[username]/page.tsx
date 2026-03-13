@@ -88,12 +88,10 @@ export default async function ProfilePage({
     .where(eq(userGame.userId, dbUser.id))
     .orderBy(desc(game.popularity));
 
-  const categories = CATEGORIES
-    .map((cat) => ({
-      ...cat,
-      games: userGames.filter((g) => g.category === cat.id),
-    }))
-    .filter((cat) => cat.games.length > 0);
+  const categories = CATEGORIES.map((cat) => ({
+    ...cat,
+    games: userGames.filter((g) => g.category === cat.id),
+  })).filter((cat) => cat.games.length > 0);
 
   const joined = dbUser.createdAt
     ? new Intl.DateTimeFormat("en", {

@@ -167,8 +167,8 @@ export default async function GameDetailPage({
       <PublicNav />
 
       <div className="mx-auto max-w-6xl px-6 py-10">
-        <div className="flex gap-8 mb-10">
-          <div className="w-48 flex-none">
+        <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 mb-10">
+          <div className="w-36 sm:w-48 flex-none mx-auto sm:mx-0">
             <div className="aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/10 relative">
               {coverUrl ? (
                 <Image
@@ -176,14 +176,14 @@ export default async function GameDetailPage({
                   alt={meta.title}
                   fill
                   className="object-cover"
-                  sizes="192px"
+                  sizes="(max-width: 640px) 144px, 192px"
                 />
               ) : (
                 <div className="size-full bg-white/5" />
               )}
             </div>
           </div>
-          <div className="flex-1 py-2">
+          <div className="flex-1 sm:py-2">
             <h1 className="text-3xl font-bold">{meta.title}</h1>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               {meta.genres.map((g) => (

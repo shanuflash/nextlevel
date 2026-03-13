@@ -73,7 +73,7 @@ export function RatingSlider({ value, onChange, name }: RatingSliderProps) {
       <div className="flex items-center gap-3">
         <div
           ref={barRef}
-          className="flex-1 flex gap-[2px] h-7 cursor-pointer select-none touch-none"
+          className="flex-1 flex gap-[2px] h-9 cursor-pointer select-none touch-none"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -115,7 +115,7 @@ export function RatingSlider({ value, onChange, name }: RatingSliderProps) {
           <button
             type="button"
             onClick={() => onChange(null)}
-            className="text-[10px] text-white/25 hover:text-white/50 transition-colors flex-none"
+            className="text-xs text-white/25 hover:text-white/50 transition-colors flex-none px-1 py-1"
           >
             Clear
           </button>

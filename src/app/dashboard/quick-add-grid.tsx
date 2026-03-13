@@ -28,7 +28,7 @@ export function QuickAddGrid({ games }: { games: PopularGame[] }) {
   if (games.length === 0) return null;
 
   return (
-    <div className="bg-white/2 rounded-2xl border border-white/8 p-6 space-y-5">
+    <div className="bg-white/3 rounded-2xl border border-white/8 p-6 space-y-5">
       <div>
         <h2 className="text-lg font-semibold">Get Started</h2>
         <p className="text-sm text-white/40 mt-1">
@@ -73,7 +73,7 @@ export function QuickAddGrid({ games }: { games: PopularGame[] }) {
               <button
                 onClick={() => handleQuickAdd(g)}
                 disabled={added || loading}
-                className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-1 rounded-lg backdrop-blur-sm transition-all ${
+                className={`absolute top-2 right-2 text-xs font-bold px-2.5 py-1.5 rounded-lg backdrop-blur-sm transition-all ${
                   added
                     ? "bg-emerald-500/80 text-white cursor-default"
                     : "bg-black/70 text-white hover:bg-primary/80"

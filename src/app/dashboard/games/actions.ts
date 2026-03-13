@@ -225,7 +225,10 @@ export async function updateGame(formData: FormData) {
   if (!userGameId) throw new Error("Missing game ID");
 
   const existing = await db.query.userGame.findFirst({
-    where: and(eq(userGame.id, userGameId), eq(userGame.userId, session.user.id)),
+    where: and(
+      eq(userGame.id, userGameId),
+      eq(userGame.userId, session.user.id)
+    ),
     columns: { category: true, startedAt: true, finishedAt: true },
   });
 

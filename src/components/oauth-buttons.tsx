@@ -29,7 +29,7 @@ export function OAuthButtons({
     try {
       await signIn.social({ provider, callbackURL: "/dashboard" });
     } catch {
-      const name = provider === "google" ? "Google" : "Github";
+      const name = provider === "google" ? "Google" : "GitHub";
       onError?.(`${name} sign-in failed. Please try again.`);
       setLoading({ google: false, github: false });
       onLoadingChange?.(false);
@@ -56,7 +56,7 @@ export function OAuthButtons({
         className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-medium text-sm hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <HugeiconsIcon icon={Github01Icon} strokeWidth={2} className="size-5" />
-        {loading.github ? "Signing in..." : "Continue with Github"}
+        {loading.github ? "Signing in..." : "Continue with GitHub"}
       </button>
     </>
   );

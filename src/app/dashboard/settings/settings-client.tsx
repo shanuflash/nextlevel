@@ -84,7 +84,7 @@ function ProfileSection({ user }: { user: UserData }) {
       </h2>
 
       <form action={handleSubmit}>
-        <div className="bg-white/[0.03] rounded-2xl border border-white/[0.06] divide-y divide-white/[0.06]">
+        <div className="bg-white/3 rounded-2xl border border-white/8 divide-y divide-white/8">
           <div className="p-5 flex items-center gap-4">
             <Avatar name={user.name} image={user.image} size="md" showRing />
             <div className="min-w-0">
@@ -185,7 +185,7 @@ function SecuritySection({ user }: { user: UserData }) {
         callbackURL: "/dashboard/settings",
       });
     } catch {
-      const name = provider === "google" ? "Google" : "Github";
+      const name = provider === "google" ? "Google" : "GitHub";
       toast.error(`Failed to link ${name} account`);
       setIsLinking(false);
     }
@@ -194,7 +194,7 @@ function SecuritySection({ user }: { user: UserData }) {
   async function handleUnlink(provider: Provider) {
     const hasPassword = user.hasPassword;
     if (!hasPassword) {
-      const name = provider === "google" ? "Google" : "Github";
+      const name = provider === "google" ? "Google" : "GitHub";
       toast.error(
         `Set a password first before unlinking ${name} — otherwise you'll be locked out!`
       );
@@ -207,11 +207,11 @@ function SecuritySection({ user }: { user: UserData }) {
         providerId: provider,
       });
       if (error) throw new Error(error.message);
-      const name = provider === "google" ? "Google" : "Github";
+      const name = provider === "google" ? "Google" : "GitHub";
       toast.success(`${name} account unlinked`);
       router.refresh();
     } catch (e: unknown) {
-      const name = provider === "google" ? "Google" : "Github";
+      const name = provider === "google" ? "Google" : "GitHub";
       toast.error(
         e instanceof Error ? e.message : `Failed to unlink ${name} account`
       );
@@ -233,7 +233,7 @@ function SecuritySection({ user }: { user: UserData }) {
     return (
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="size-9 rounded-lg bg-white/5 border border-white/[0.06] flex items-center justify-center">
+          <div className="size-9 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center">
             {icon}
           </div>
           <div>
@@ -273,7 +273,7 @@ function SecuritySection({ user }: { user: UserData }) {
         Security
       </h2>
 
-      <div className="bg-white/[0.03] rounded-2xl border border-white/[0.06] divide-y divide-white/[0.06]">
+      <div className="bg-white/3 rounded-2xl border border-white/8 divide-y divide-white/8">
         {/* Email */}
         <div className="p-5">
           <p className="text-xs text-white/40 mb-0.5">Email</p>

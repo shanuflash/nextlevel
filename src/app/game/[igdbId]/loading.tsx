@@ -7,11 +7,11 @@ export default function GameLoading() {
       <PublicNav />
 
       <div className="mx-auto max-w-6xl px-6 py-10">
-        <div className="flex gap-8 mb-10">
-          <div className="w-48 flex-none">
+        <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 mb-10">
+          <div className="w-36 sm:w-48 flex-none mx-auto sm:mx-0">
             <Skeleton className="aspect-3/4 rounded-2xl ring-1 ring-white/10" />
           </div>
-          <div className="flex-1 py-2 space-y-4">
+          <div className="flex-1 sm:py-2 space-y-4">
             <Skeleton className="h-9 w-64 rounded-lg" />
             <div className="flex flex-wrap gap-2">
               <Skeleton className="h-6 w-16 rounded-lg" />

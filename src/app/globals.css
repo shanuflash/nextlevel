@@ -45,6 +45,8 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-divider: var(--surface-divider);
 }
 
 :root {
@@ -72,6 +74,8 @@
   --chart-4: oklch(0.59 0.22 1);
   --chart-5: oklch(0.52 0.2 4);
   --radius: 0.875rem;
+  --surface-elevated: #12121a;
+  --surface-divider: #0f0f13;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.59 0.22 1);

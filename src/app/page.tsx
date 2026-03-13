@@ -201,7 +201,10 @@ export default async function LandingPage() {
       <section className="relative pb-20 pt-12">
         <div className="absolute inset-0 bg-linear-to-b from-white/2 via-transparent to-transparent pointer-events-none" />
         <div className="mx-auto max-w-6xl px-6 relative z-10">
-          <StaggerContainer className="grid grid-cols-1 sm:grid-cols-3 gap-6" stagger={0.12}>
+          <StaggerContainer
+            className="grid grid-cols-1 sm:grid-cols-3 gap-6"
+            stagger={0.12}
+          >
             {steps.map((s) => (
               <StaggerItem key={s.number} className="relative">
                 <span className="absolute -top-2 right-0 text-6xl font-bold text-white/4 leading-none select-none">

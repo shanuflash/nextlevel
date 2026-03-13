@@ -27,7 +27,7 @@ export default function ProfileLoading() {
             <Skeleton className="size-24 rounded-2xl flex-none" />
             <div className="space-y-2">
               <Skeleton className="h-7 w-48 rounded-lg" />
-              <Skeleton className="h-5 w-26 rounded-md" />
+              <Skeleton className="h-5 w-24 rounded-md" />
               <Skeleton className="h-4 w-64 rounded-md" />
             </div>
           </div>
@@ -36,7 +36,7 @@ export default function ProfileLoading() {
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i}>
                   <Skeleton
-                    className={`${i < 2 ? "h-9 w-14" : "h-5 w-18"} rounded-md`}
+                    className={`${i < 2 ? "h-9 w-14" : "h-5 w-20"} rounded-md`}
                   />
                   <Skeleton className="h-3 w-16 rounded-md mt-2" />
                 </div>
@@ -77,7 +77,7 @@ export default function ProfileLoading() {
                 return (
                   <Skeleton
                     key={i}
-                    className={`${aspect} rounded-2xl ring-1 ring-white/6`}
+                    className={`${aspect} rounded-2xl ring-1 ring-white/8`}
                   />
                 );
               })}

@@ -105,7 +105,7 @@ function GameModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-[#12121a] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-surface-elevated border border-white/10 rounded-2xl w-full max-w-md overflow-hidden">
         {/* Cover image header */}
         <div className="relative aspect-video overflow-hidden bg-white/5">
           {coverUrl ? (
@@ -119,10 +119,10 @@ function GameModal({
           ) : (
             <div className="size-full bg-white/5" />
           )}
-          <div className="absolute inset-0 bg-linear-to-t from-[#12121a] via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-surface-elevated via-transparent to-transparent" />
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 size-8 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white transition-colors"
+            className="absolute top-3 right-3 size-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white transition-colors"
           >
             ✕
           </button>
@@ -255,7 +255,7 @@ function GameModal({
 function BentoHeader({ profile }: { profile: ProfileData }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-      <div className="md:col-span-2 bg-white/3 rounded-3xl border border-white/8 p-8 flex items-center gap-6">
+      <div className="md:col-span-2 bg-white/3 rounded-3xl border border-white/8 p-5 sm:p-8 flex items-center gap-4 sm:gap-6">
         <Avatar
           name={profile.displayName}
           image={profile.avatarUrl}
@@ -272,7 +272,7 @@ function BentoHeader({ profile }: { profile: ProfileData }) {
           )}
         </div>
       </div>
-      <div className="bg-white/3 rounded-3xl border border-white/8 p-8 flex flex-col justify-center">
+      <div className="bg-white/3 rounded-3xl border border-white/8 p-5 sm:p-8 flex flex-col justify-center">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <div className="text-3xl font-bold text-primary">
@@ -354,14 +354,14 @@ function MasonryGrid({
                 className="group relative text-left w-full"
               >
                 <div
-                  className={`relative ${aspect} overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/6 transition-all duration-300 group-hover:ring-white/20 group-hover:shadow-2xl group-hover:shadow-primary/8 group-hover:-translate-y-0.5`}
+                  className={`relative ${aspect} overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all duration-300 group-hover:ring-white/25 group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40`}
                 >
                   {coverUrl ? (
                     <Image
                       src={coverUrl}
                       alt={g.title}
                       fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="object-cover"
                       sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                     />
                   ) : (
@@ -414,7 +414,7 @@ export function ProfileView({
             ...g,
             categoryId: cat.id,
             categoryLabel: cat.label,
-          })),
+          }))
         )
         .sort((a, b) => {
           const aPlaying = a.categoryId === "playing" ? 0 : 1;
