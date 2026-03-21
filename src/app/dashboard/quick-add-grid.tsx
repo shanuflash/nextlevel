@@ -36,7 +36,7 @@ export function QuickAddGrid({ games }: { games: PopularGame[] }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
         {games.map((g) => {
           const coverUrl = igdbCover(g.coverImageId, "t_cover_big_2x");
           const added = addedIds.has(g.igdbId);

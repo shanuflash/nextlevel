@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { igdbCover } from "@/src/lib/igdb";
@@ -306,6 +306,75 @@ function BentoHeader({ profile }: { profile: ProfileData }) {
 
 /* ─── Masonry Grid ─── */
 
+function GameCard({
+  game,
+  aspect,
+  activeCategory,
+  onSelect,
+}: {
+  game: GameItem & { categoryId: string; categoryLabel: string };
+  aspect: string;
+  activeCategory: string;
+  onSelect: (
+    g: GameItem & { categoryId: string; categoryLabel: string }
+  ) => void;
+}) {
+  const coverUrl = igdbCover(game.coverImageId);
+  const cat = CATEGORIES.find((c) => c.id === game.categoryId);
+  return (
+    <button
+      onClick={() => onSelect(game)}
+      className="group relative text-left w-full"
+    >
+      <div
+        className={`relative ${aspect} overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all duration-300 group-hover:ring-white/25 group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40`}
+      >
+        {coverUrl ? (
+          <Image
+            src={coverUrl}
+            alt={game.title}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 33vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+          />
+        ) : (
+          <div className="size-full bg-white/5" />
+        )}
+        {game.rating && (
+          <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+            ★ {game.rating}
+          </div>
+        )}
+        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 via-black/30 to-transparent p-3 pt-10">
+          <p className="text-xs font-semibold leading-tight line-clamp-2">
+            {game.title}
+          </p>
+          {activeCategory === "all" && cat && (
+            <p className={`text-[10px] mt-0.5 ${cat.color}`}>{cat.label}</p>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function useColumnCount() {
+  const [cols, setCols] = useState(2);
+  useEffect(() => {
+    function update() {
+      const w = window.innerWidth;
+      if (w >= 1024) setCols(5);
+      else if (w >= 768) setCols(4);
+      else if (w >= 640) setCols(3);
+      else setCols(2);
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return cols;
+}
+
 function MasonryGrid({
   games,
   activeCategory,
@@ -317,73 +386,29 @@ function MasonryGrid({
     g: GameItem & { categoryId: string; categoryLabel: string }
   ) => void;
 }) {
-  // Distribute items round-robin into columns to preserve sort order
-  // (CSS columns fills top-to-bottom per column, breaking sort order)
-  const colCount = { base: 2, sm: 3, md: 4, lg: 5 };
-  const columns: (typeof games)[] = Array.from(
-    { length: colCount.lg },
-    () => []
-  );
-  games.forEach((g, i) => columns[i % colCount.lg].push(g));
+  const colCount = useColumnCount();
+
+  const columns = useMemo(() => {
+    const cols: (typeof games)[] = Array.from({ length: colCount }, () => []);
+    games.forEach((g, i) => cols[i % colCount].push(g));
+    return cols;
+  }, [games, colCount]);
 
   return (
     <div className="flex gap-4">
       {columns.map((col, colIdx) => (
-        <div
-          key={colIdx}
-          className={`flex-1 flex flex-col gap-4 min-w-0 ${
-            colIdx >= colCount.base
-              ? colIdx >= colCount.sm
-                ? colIdx >= colCount.md
-                  ? "hidden lg:flex"
-                  : "hidden md:flex"
-                : "hidden sm:flex"
-              : ""
-          }`}
-        >
+        <div key={colIdx} className="flex-1 flex flex-col gap-4 min-w-0">
           {col.map((g, i) => {
-            // Use the global index for consistent aspect ratio assignment
-            const globalIdx = i * colCount.lg + colIdx;
+            const globalIdx = i * colCount + colIdx;
             const aspect = ASPECT_RATIOS[globalIdx % ASPECT_RATIOS.length];
-            const coverUrl = igdbCover(g.coverImageId);
-            const cat = CATEGORIES.find((c) => c.id === g.categoryId);
             return (
-              <button
+              <GameCard
                 key={g.id}
-                onClick={() => onSelect(g)}
-                className="group relative text-left w-full"
-              >
-                <div
-                  className={`relative ${aspect} overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all duration-300 group-hover:ring-white/25 group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40`}
-                >
-                  {coverUrl ? (
-                    <Image
-                      src={coverUrl}
-                      alt={g.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
-                    />
-                  ) : (
-                    <div className="size-full bg-white/5" />
-                  )}
-                  {g.rating && (
-                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                      ★ {g.rating}
-                    </div>
-                  )}
-                  <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 via-black/30 to-transparent p-3 pt-10">
-                    <p className="text-xs font-semibold leading-tight line-clamp-2">
-                      {g.title}
-                    </p>
-                    {activeCategory === "all" && cat && (
-                      <p className={`text-[10px] mt-0.5 ${cat.color}`}>
-                        {cat.label}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </button>
+                game={g}
+                aspect={aspect}
+                activeCategory={activeCategory}
+                onSelect={onSelect}
+              />
             );
           })}
         </div>

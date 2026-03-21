@@ -106,7 +106,7 @@ export default async function DashboardPage() {
           <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">
             Most Anticipated
           </h2>
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {hypeGames.map((g) => (
               <GameCard
                 key={g.igdbId}
@@ -133,7 +133,7 @@ export default async function DashboardPage() {
           <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">
             Recently Released
           </h2>
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {recentGames.map((g) => (
               <GameCard
                 key={g.igdbId}
