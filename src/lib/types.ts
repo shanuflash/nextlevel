@@ -15,5 +15,5 @@ export interface UserGameRow {
   slug: string;
   coverImageId: string | null;
   genre: string | null;
-  createdAt: Date;
+  updatedAt: Date;
 }

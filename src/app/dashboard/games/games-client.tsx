@@ -767,7 +767,7 @@ function EditGameDialog({
   );
 }
 
-type SortBy = "newest" | "oldest";
+type SortBy = "newest" | "oldest" | "a-z" | "z-a" | "rating";
 
 export function GamesClient({ games }: { games: UserGameRow[] }) {
   const [isShowingAdd, setIsShowingAdd] = useState(false);
@@ -784,15 +784,26 @@ export function GamesClient({ games }: { games: UserGameRow[] }) {
       : games.filter((g) => g.category === activeCategory);
 
   const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === "a-z" || sortBy === "z-a") {
+      const cmp = a.title.localeCompare(b.title);
+      return sortBy === "a-z" ? cmp : -cmp;
+    }
+    if (sortBy === "rating") {
+      const aRating = a.rating ?? -1;
+      const bRating = b.rating ?? -1;
+      if (bRating !== aRating) return bRating - aRating;
+      return a.title.localeCompare(b.title);
+    }
     const aTime =
-      a.createdAt instanceof Date
-        ? a.createdAt.getTime()
-        : new Date(a.createdAt).getTime();
+      a.updatedAt instanceof Date
+        ? a.updatedAt.getTime()
+        : new Date(a.updatedAt).getTime();
     const bTime =
-      b.createdAt instanceof Date
-        ? b.createdAt.getTime()
-        : new Date(b.createdAt).getTime();
-    return sortBy === "newest" ? bTime - aTime : aTime - bTime;
+      b.updatedAt instanceof Date
+        ? b.updatedAt.getTime()
+        : new Date(b.updatedAt).getTime();
+    const timeDiff = sortBy === "newest" ? bTime - aTime : aTime - bTime;
+    return timeDiff !== 0 ? timeDiff : a.title.localeCompare(b.title);
   });
 
   return (
@@ -851,26 +862,27 @@ export function GamesClient({ games }: { games: UserGameRow[] }) {
         </div>
         <div className="flex items-center gap-1.5 ml-auto">
           <span className="text-[11px] text-white/30">Sort:</span>
-          <button
-            onClick={() => setSortBy("newest")}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
-              sortBy === "newest"
-                ? "bg-white/12 text-white border-white/20"
-                : "text-white/40 border-white/8 hover:text-white/60"
-            }`}
-          >
-            Newest
-          </button>
-          <button
-            onClick={() => setSortBy("oldest")}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
-              sortBy === "oldest"
-                ? "bg-white/12 text-white border-white/20"
-                : "text-white/40 border-white/8 hover:text-white/60"
-            }`}
-          >
-            Oldest
-          </button>
+          {(
+            [
+              { id: "a-z", label: "A–Z" },
+              { id: "z-a", label: "Z–A" },
+              { id: "rating", label: "Rating" },
+              { id: "newest", label: "Newest" },
+              { id: "oldest", label: "Oldest" },
+            ] as const
+          ).map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => setSortBy(opt.id)}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
+                sortBy === opt.id
+                  ? "bg-white/12 text-white border-white/20"
+                  : "text-white/40 border-white/8 hover:text-white/60"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
