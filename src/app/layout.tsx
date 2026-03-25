@@ -3,6 +3,7 @@ import { DM_Sans, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/src/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/next";
+import { PortalWidget } from "shanu-portal-widget";
 
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -44,6 +45,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <PortalWidget />
         <Toaster />
         <Analytics />
       </body>
