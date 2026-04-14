@@ -83,18 +83,19 @@ export async function GET(req: NextRequest) {
     const headers = igdbHeaders(token);
 
     const now = Math.floor(Date.now() / 1000);
-    const ninetyDaysAgo = now - 90 * 24 * 60 * 60;
+    const sixtyDaysAgo = now - 60 * 24 * 60 * 60;
+    const sixMonthsFromNow = now + 180 * 24 * 60 * 60;
 
     const [hypeRes, recentRes] = await Promise.all([
       fetch("https://api.igdb.com/v4/games", {
         method: "POST",
         headers,
-        body: `fields ${FIELDS};\nwhere hypes > 0 & first_release_date > ${now} & cover != null;\nsort hypes desc;\nlimit 5;`,
+        body: `fields ${FIELDS};\nwhere hypes > 0 & first_release_date > ${now} & first_release_date < ${sixMonthsFromNow} & cover != null;\nsort hypes desc;\nlimit 5;`,
       }),
       fetch("https://api.igdb.com/v4/games", {
         method: "POST",
         headers,
-        body: `fields ${FIELDS};\nwhere first_release_date > ${ninetyDaysAgo} & first_release_date < ${now} & cover != null & total_rating_count > 0;\nsort total_rating_count desc;\nlimit 5;`,
+        body: `fields ${FIELDS};\nwhere first_release_date > ${sixtyDaysAgo} & first_release_date < ${now} & cover != null & total_rating_count > 0;\nsort total_rating_count desc;\nlimit 5;`,
       }),
     ]);
 
