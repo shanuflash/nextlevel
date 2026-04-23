@@ -18,7 +18,6 @@ export function GameAddButton({
   existingCategory,
 }: GameAddButtonProps) {
   const [showPicker, setShowPicker] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
   const [addedCategory, setAddedCategory] = useState<string | null>(null);
 
   const currentCategory = addedCategory ?? existingCategory;
@@ -49,16 +48,15 @@ export function GameAddButton({
   }
 
   async function handleAdd(category: string) {
-    setIsAdding(true);
+    setAddedCategory(category);
+    setShowPicker(false);
     try {
       await addGame({ igdbId, category });
-      setAddedCategory(category);
-      setShowPicker(false);
       toast.success("Added to your library!");
     } catch (e: unknown) {
+      setAddedCategory(null);
+      setShowPicker(true);
       toast.error(e instanceof Error ? e.message : "Failed to add game");
-    } finally {
-      setIsAdding(false);
     }
   }
 
@@ -77,10 +75,9 @@ export function GameAddButton({
             <button
               key={cat.id}
               onClick={() => handleAdd(cat.id)}
-              disabled={isAdding}
-              className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all ${cat.bg} ${cat.color} hover:opacity-80 disabled:opacity-50`}
+              className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all ${cat.bg} ${cat.color} hover:opacity-80`}
             >
-              {isAdding ? "..." : cat.label}
+              {cat.label}
             </button>
           ))}
           <button

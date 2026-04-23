@@ -589,11 +589,16 @@ function BulkAddDialog({
 function EditGameDialog({
   game,
   onClose,
+  onOptimisticUpdate,
+  onOptimisticRemove,
+  onRevert,
 }: {
   game: UserGameRow;
   onClose: () => void;
+  onOptimisticUpdate: (id: string, category: string, rating: number | null) => void;
+  onOptimisticRemove: (id: string) => void;
+  onRevert: (game: UserGameRow) => void;
 }) {
-  const [isPending, setIsPending] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editCategory, setEditCategory] = useState(game.category);
   const [editRating, setEditRating] = useState<number | null>(game.rating);
@@ -601,26 +606,27 @@ function EditGameDialog({
   const cat = CATEGORIES.find((c) => c.id === game.category);
 
   async function handleSubmit(formData: FormData) {
-    setIsPending(true);
+    onOptimisticUpdate(game.id, editCategory, editRating);
+    onClose();
     try {
       await updateGame(formData);
       toast.success(`Updated "${game.title}"`);
-      onClose();
     } catch {
+      onRevert(game);
       toast.error("Failed to update game");
-    } finally {
-      setIsPending(false);
     }
   }
 
   async function handleRemove() {
     const fd = new FormData();
     fd.set("userGameId", game.id);
+    onOptimisticRemove(game.id);
+    onClose();
     try {
       await removeGame(fd);
       toast.success(`Removed "${game.title}" from your catalog`);
-      onClose();
     } catch {
+      onRevert(game);
       toast.error("Failed to remove game");
     }
   }
@@ -735,10 +741,9 @@ function EditGameDialog({
                   </button>
                   <button
                     type="submit"
-                    disabled={isPending}
-                    className="px-5 py-2 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    className="px-5 py-2 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
                   >
-                    {isPending ? "Saving..." : "Save"}
+                    Save
                   </button>
                 </div>
               </div>
@@ -769,7 +774,8 @@ function EditGameDialog({
 
 type SortBy = "newest" | "oldest" | "a-z" | "z-a" | "rating";
 
-export function GamesClient({ games }: { games: UserGameRow[] }) {
+export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
+  const [games, setGames] = useState(initialGames);
   const [isShowingAdd, setIsShowingAdd] = useState(false);
   const [isShowingBulkAdd, setIsShowingBulkAdd] = useState(false);
   const [editingGame, setEditingGame] = useState<UserGameRow | null>(null);
@@ -777,6 +783,25 @@ export function GamesClient({ games }: { games: UserGameRow[] }) {
   const [sortBy, setSortBy] = useState<SortBy>("newest");
 
   const existingIgdbIds = new Set(games.map((g) => g.igdbId));
+
+  function handleOptimisticUpdate(id: string, category: string, rating: number | null) {
+    setGames((prev) =>
+      prev.map((g) => (g.id === id ? { ...g, category, rating } : g))
+    );
+  }
+
+  function handleOptimisticRemove(id: string) {
+    setGames((prev) => prev.filter((g) => g.id !== id));
+  }
+
+  function handleRevert(game: UserGameRow) {
+    setGames((prev) => {
+      const exists = prev.some((g) => g.id === game.id);
+      return exists
+        ? prev.map((g) => (g.id === game.id ? game : g))
+        : [...prev, game];
+    });
+  }
 
   const filtered =
     activeCategory === "all"
@@ -955,6 +980,9 @@ export function GamesClient({ games }: { games: UserGameRow[] }) {
         <EditGameDialog
           game={editingGame}
           onClose={() => setEditingGame(null)}
+          onOptimisticUpdate={handleOptimisticUpdate}
+          onOptimisticRemove={handleOptimisticRemove}
+          onRevert={handleRevert}
         />
       )}
     </div>

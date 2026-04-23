@@ -10,18 +10,19 @@ import type { PopularGame } from "@/src/lib/types";
 
 export function QuickAddGrid({ games }: { games: PopularGame[] }) {
   const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
-  const [loadingId, setLoadingId] = useState<number | null>(null);
 
   async function handleQuickAdd(g: PopularGame) {
-    setLoadingId(g.igdbId);
+    setAddedIds((prev) => new Set(prev).add(g.igdbId));
     try {
       await addGame({ igdbId: g.igdbId, category: "want-to-play" });
-      setAddedIds((prev) => new Set(prev).add(g.igdbId));
       toast.success(`Added "${g.title}" to Want to Play`);
     } catch (e: unknown) {
+      setAddedIds((prev) => {
+        const s = new Set(prev);
+        s.delete(g.igdbId);
+        return s;
+      });
       toast.error(e instanceof Error ? e.message : "Failed to add game");
-    } finally {
-      setLoadingId(null);
     }
   }
 
@@ -40,7 +41,6 @@ export function QuickAddGrid({ games }: { games: PopularGame[] }) {
         {games.map((g) => {
           const coverUrl = igdbCover(g.coverImageId, "t_cover_big_2x");
           const added = addedIds.has(g.igdbId);
-          const loading = loadingId === g.igdbId;
           const firstGenre = g.genres?.split(", ")[0];
 
           return (
@@ -72,14 +72,14 @@ export function QuickAddGrid({ games }: { games: PopularGame[] }) {
               </Link>
               <button
                 onClick={() => handleQuickAdd(g)}
-                disabled={added || loading}
+                disabled={added}
                 className={`absolute top-2 right-2 text-xs font-bold px-2.5 py-1.5 rounded-lg backdrop-blur-sm transition-all ${
                   added
                     ? "bg-emerald-500/80 text-white cursor-default"
                     : "bg-black/70 text-white hover:bg-primary/80"
                 } disabled:cursor-not-allowed`}
               >
-                {loading ? "..." : added ? "Added" : "+ Want to Play"}
+                {added ? "Added" : "+ Want to Play"}
               </button>
             </div>
           );
