@@ -15,9 +15,11 @@ export type { UserGameRow };
 function AddGameDialog({
   onClose,
   existingIgdbIds,
+  onAdded,
 }: {
   onClose: () => void;
   existingIgdbIds: Set<number>;
+  onAdded: (rows: UserGameRow[]) => void;
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<IGDBGameMeta[]>([]);
@@ -75,11 +77,12 @@ function AddGameDialog({
     if (!selected) return;
     setIsAdding(true);
     try {
-      await addGame({
+      const row = await addGame({
         igdbId: selected.igdbId,
         category,
         rating: rating ? parseFloat(rating) : undefined,
       });
+      onAdded([row]);
       toast.success(`Added "${selected.title}" to your catalog`);
       onClose();
     } catch (e: unknown) {
@@ -299,9 +302,11 @@ interface QueuedGame {
 function BulkAddDialog({
   onClose,
   existingIgdbIds,
+  onAdded,
 }: {
   onClose: () => void;
   existingIgdbIds: Set<number>;
+  onAdded: (rows: UserGameRow[]) => void;
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<IGDBGameMeta[]>([]);
@@ -383,6 +388,10 @@ function BulkAddDialog({
         rating: q.rating ? parseFloat(q.rating) : undefined,
       }));
       const results = await bulkAddGames(items);
+      const addedRows = results
+        .filter((r) => r.ok && r.row)
+        .map((r) => r.row!);
+      if (addedRows.length > 0) onAdded(addedRows);
       const added = results.filter((r) => r.ok).length;
       const skipped = results.filter((r) => !r.ok).length;
       if (added > 0)
@@ -794,6 +803,14 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
     setGames((prev) => prev.filter((g) => g.id !== id));
   }
 
+  function handleAdded(rows: UserGameRow[]) {
+    setGames((prev) => {
+      const existing = new Set(prev.map((g) => g.id));
+      const next = rows.filter((r) => !existing.has(r.id));
+      return next.length > 0 ? [...prev, ...next] : prev;
+    });
+  }
+
   function handleRevert(game: UserGameRow) {
     setGames((prev) => {
       const exists = prev.some((g) => g.id === game.id);
@@ -968,12 +985,14 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
         <AddGameDialog
           onClose={() => setIsShowingAdd(false)}
           existingIgdbIds={existingIgdbIds}
+          onAdded={handleAdded}
         />
       )}
       {isShowingBulkAdd && (
         <BulkAddDialog
           onClose={() => setIsShowingBulkAdd(false)}
           existingIgdbIds={existingIgdbIds}
+          onAdded={handleAdded}
         />
       )}
       {editingGame && (

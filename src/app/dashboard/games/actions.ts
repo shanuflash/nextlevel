@@ -7,6 +7,7 @@ import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { fetchIGDBGame, fetchIGDBGames } from "@/src/lib/igdb";
 import type { GameCategory } from "@/src/lib/constants";
+import type { UserGameRow } from "@/src/lib/types";
 
 function generateId() {
   return crypto.randomUUID();
@@ -18,7 +19,7 @@ interface AddGameInput {
   rating?: number;
 }
 
-export async function addGame(input: AddGameInput) {
+export async function addGame(input: AddGameInput): Promise<UserGameRow> {
   const session = await getSession();
   if (!session) throw new Error("Not authenticated");
 
@@ -72,8 +73,9 @@ export async function addGame(input: AddGameInput) {
   if (existingUserGame) throw new Error("Game already in your catalog");
 
   const now = new Date();
+  const userGameId = generateId();
   await db.insert(userGame).values({
-    id: generateId(),
+    id: userGameId,
     userId: session.user.id,
     gameId: existingGame!.id,
     igdbId,
@@ -85,6 +87,19 @@ export async function addGame(input: AddGameInput) {
 
   revalidatePath("/dashboard/games");
   revalidatePath("/dashboard");
+
+  return {
+    id: userGameId,
+    category,
+    rating: rating ?? null,
+    gameId: existingGame!.id,
+    igdbId,
+    title: existingGame!.title,
+    slug: existingGame!.slug,
+    coverImageId: existingGame!.coverImageId,
+    genre: existingGame!.genres,
+    updatedAt: now,
+  };
 }
 
 interface BulkAddItem {
@@ -162,6 +177,7 @@ export async function bulkAddGames(items: BulkAddItem[]) {
     title: string;
     ok: boolean;
     error?: string;
+    row?: UserGameRow;
   }[] = [];
 
   await Promise.all(
@@ -187,8 +203,9 @@ export async function bulkAddGames(items: BulkAddItem[]) {
       }
       try {
         const now = new Date();
+        const userGameId = generateId();
         await db.insert(userGame).values({
-          id: generateId(),
+          id: userGameId,
           userId: session.user.id,
           gameId: dbGame.id,
           igdbId: item.igdbId,
@@ -197,7 +214,23 @@ export async function bulkAddGames(items: BulkAddItem[]) {
           startedAt: item.category === "playing" ? now : null,
           finishedAt: item.category === "finished" ? now : null,
         });
-        results.push({ igdbId: item.igdbId, title: dbGame.title, ok: true });
+        results.push({
+          igdbId: item.igdbId,
+          title: dbGame.title,
+          ok: true,
+          row: {
+            id: userGameId,
+            category: item.category,
+            rating: item.rating ?? null,
+            gameId: dbGame.id,
+            igdbId: item.igdbId,
+            title: dbGame.title,
+            slug: dbGame.slug,
+            coverImageId: dbGame.coverImageId,
+            genre: dbGame.genres,
+            updatedAt: now,
+          },
+        });
       } catch {
         results.push({
           igdbId: item.igdbId,
