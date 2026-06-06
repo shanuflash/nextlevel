@@ -98,25 +98,38 @@ export async function GET(req: NextRequest) {
     const escaped = query.replace(/"/g, '\\"');
     const isNumeric = /^\d+$/.test(query.trim());
 
-    const games = await igdbFetch(
-      headers,
-      `fields ${FIELDS};\nwhere name ~ *"${escaped}"*;\nsort total_rating_count desc;\nlimit 10;`
-    );
+    const [searchGames, wildcardGames] = await Promise.all([
+      igdbFetch(headers, `search "${escaped}";\nfields ${FIELDS};\nlimit 10;`),
+      igdbFetch(
+        headers,
+        `fields ${FIELDS};\nwhere name ~ *"${escaped}"*;\nsort total_rating_count desc;\nlimit 10;`
+      ),
+    ]);
+
+    const games: IGDBRawSearchResult[] = [];
+    const existingIds = new Set<number>();
 
     if (isNumeric) {
       const idGames = await igdbFetch(
         headers,
         `fields ${FIELDS};\nwhere id = ${query.trim()};\nlimit 1;`
       );
-      const existingIds = new Set(games.map((g) => g.id));
       for (const g of idGames) {
         if (!existingIds.has(g.id)) {
-          games.unshift(g);
+          existingIds.add(g.id);
+          games.push(g);
         }
       }
     }
 
-    const results = games.map(mapResult);
+    for (const g of [...searchGames, ...wildcardGames]) {
+      if (!existingIds.has(g.id)) {
+        existingIds.add(g.id);
+        games.push(g);
+      }
+    }
+
+    const results = games.slice(0, 10).map(mapResult);
     searchCache.set(cacheKey, {
       data: results,
       expiresAt: Date.now() + CACHE_TTL_MS,
