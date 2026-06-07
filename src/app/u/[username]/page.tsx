@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { db } from "@/src/lib/auth";
 import { user } from "@/schema/auth-schema";
 import { userGame, game } from "@/schema/game-schema";
@@ -82,6 +83,7 @@ export default async function ProfilePage({
       slug: game.slug,
       coverImageId: game.coverImageId,
       genre: game.genres,
+      releaseDate: game.releaseDate,
     })
     .from(userGame)
     .innerJoin(game, eq(userGame.gameId, game.id))
@@ -128,7 +130,9 @@ export default async function ProfilePage({
       <PublicNav />
 
       <div className="mx-auto max-w-6xl px-6 py-10 w-full flex-1">
-        <ProfileView profile={profileData} isOwner={isOwner} />
+        <Suspense>
+          <ProfileView profile={profileData} isOwner={isOwner} />
+        </Suspense>
       </div>
 
       <footer className="border-t border-white/6 mt-auto">

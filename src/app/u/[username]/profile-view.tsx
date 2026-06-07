@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { igdbCover } from "@/src/lib/igdb";
@@ -23,6 +24,7 @@ interface GameItem {
   slug: string;
   coverImageId: string | null;
   genre: string | null;
+  releaseDate: string | null;
 }
 
 interface Category {
@@ -41,6 +43,11 @@ interface ProfileData {
   joinedDate: string;
   finishedCount: number;
   categories: Category[];
+}
+
+function isReleased(releaseDate: string | null): boolean {
+  if (!releaseDate) return false;
+  return releaseDate <= new Date().toISOString().split("T")[0];
 }
 
 // Cycling aspect ratios for visual variety in the masonry layout
@@ -426,7 +433,61 @@ export function ProfileView({
   profile: ProfileData;
   isOwner: boolean;
 }) {
-  const [activeCategory, setActiveCategory] = useState<string | "all">("all");
+  const searchParams = useSearchParams();
+
+  const validCategories = useMemo(
+    () => new Set(["all", ...profile.categories.map((c) => c.id)]),
+    [profile.categories]
+  );
+
+  const [activeCategory, setActiveCategoryState] = useState(() => {
+    const param = searchParams.get("category");
+    return param && validCategories.has(param) ? param : "all";
+  });
+
+  const [releaseFilter, setReleaseFilterState] = useState<
+    "all" | "released" | "unreleased"
+  >(() => {
+    const param = searchParams.get("released");
+    return param === "released" || param === "unreleased" ? param : "all";
+  });
+
+  const syncUrl = useCallback((category: string, release: string) => {
+    const params = new URLSearchParams(window.location.search);
+    if (category === "all") {
+      params.delete("category");
+    } else {
+      params.set("category", category);
+    }
+    if (category === "want-to-play" && release !== "all") {
+      params.set("released", release);
+    } else {
+      params.delete("released");
+    }
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      query ? `?${query}` : window.location.pathname
+    );
+  }, []);
+
+  const setActiveCategory = useCallback(
+    (category: string) => {
+      setActiveCategoryState(category);
+      syncUrl(category, releaseFilter);
+    },
+    [releaseFilter, syncUrl]
+  );
+
+  const setReleaseFilter = useCallback(
+    (release: "all" | "released" | "unreleased") => {
+      setReleaseFilterState(release);
+      syncUrl(activeCategory, release);
+    },
+    [activeCategory, syncUrl]
+  );
+
   const [selectedGame, setSelectedGame] = useState<
     (GameItem & { categoryId: string; categoryLabel: string }) | null
   >(null);
@@ -448,14 +509,23 @@ export function ProfileView({
         });
     }
     const cat = profile.categories.find((c) => c.id === activeCategory);
-    return (
+    let games =
       cat?.games.map((g) => ({
         ...g,
         categoryId: cat.id,
         categoryLabel: cat.label,
-      })) ?? []
-    );
-  }, [activeCategory, profile.categories]);
+      })) ?? [];
+    if (activeCategory === "want-to-play" && releaseFilter !== "all") {
+      games = games.filter((g) =>
+        releaseFilter === "released" ? isReleased(g.releaseDate) : !isReleased(g.releaseDate)
+      );
+    }
+    return games;
+  }, [activeCategory, releaseFilter, profile.categories]);
+
+  const wantToPlay = profile.categories.find((c) => c.id === "want-to-play");
+  const releasedCount =
+    wantToPlay?.games.filter((g) => isReleased(g.releaseDate)).length ?? 0;
 
   return (
     <>
@@ -494,6 +564,38 @@ export function ProfileView({
           );
         })}
       </div>
+
+      {activeCategory === "want-to-play" && wantToPlay && (
+        <div className="flex flex-wrap gap-2 mb-8 -mt-4">
+          {(
+            [
+              { id: "all", label: "All", count: wantToPlay.games.length },
+              { id: "released", label: "Released", count: releasedCount },
+              {
+                id: "unreleased",
+                label: "Unreleased",
+                count: wantToPlay.games.length - releasedCount,
+              },
+            ] as const
+          ).map((sub) => {
+            const isActive = releaseFilter === sub.id;
+            return (
+              <button
+                key={sub.id}
+                onClick={() => setReleaseFilter(sub.id)}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                  isActive
+                    ? "bg-white/12 text-white border-white/20"
+                    : "bg-transparent text-white/40 border-white/8 hover:text-white/60 hover:border-white/15"
+                }`}
+              >
+                {sub.label}
+                <span className="ml-1.5 opacity-60">{sub.count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {filteredGames.length === 0 ? (
         <div className="text-center py-16 bg-white/3 rounded-2xl border border-white/8">
