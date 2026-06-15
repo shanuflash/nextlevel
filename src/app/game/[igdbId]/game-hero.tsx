@@ -77,32 +77,36 @@ export function HeroInfo({
 
       <div className="w-full flex-1 min-w-0 sm:pb-2 flex flex-col items-center sm:items-start">
         {detail.franchise && (
-          <span className="inline-flex items-center rounded-md border border-white/10 bg-white/8 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-white/55 mb-2.5">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary/80 mb-2">
             {detail.franchise}
           </span>
         )}
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-balance">
           {detail.title}
         </h1>
 
-        {year && (
-          <p className="text-sm text-white/50 font-medium mt-3">{year}</p>
-        )}
-
-        {detail.genres.length > 0 && (
-          <div className="flex flex-wrap justify-center sm:justify-start gap-1.5 mt-3">
-            {detail.genres.map((g) => (
-              <span
-                key={g}
-                className="text-xs text-white/60 bg-white/8 px-2.5 py-1 rounded-lg border border-white/8"
-              >
+        {(year || detail.genres.length > 0) && (
+          <div className="mt-2.5 flex flex-wrap items-center justify-center sm:justify-start gap-x-2 gap-y-1 text-sm text-white/50">
+            {year && <span className="font-medium">{year}</span>}
+            {year && detail.genres.length > 0 && (
+              <span className="text-white/25" aria-hidden>
+                •
+              </span>
+            )}
+            {detail.genres.map((g, i) => (
+              <span key={g} className="flex items-center gap-x-2">
+                {i > 0 && (
+                  <span className="text-white/25" aria-hidden>
+                    •
+                  </span>
+                )}
                 {g}
               </span>
             ))}
           </div>
         )}
 
-        <div className="mt-5 w-full flex flex-wrap items-center gap-3">
+        <div className="mt-5 w-full flex flex-wrap items-center justify-center sm:justify-start gap-3">
           <GameAddButton
             igdbId={igdbId}
             isLoggedIn={isLoggedIn}

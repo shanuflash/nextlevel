@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { AuthNav } from "@/src/components/auth-nav";
 
 interface DashboardUser {
@@ -23,9 +24,17 @@ export function DashboardShell({
       </main>
       <footer className="border-t border-white/6 mt-auto">
         <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
-          <span className="text-xs text-white/20">
-            NextLevel — Your Gaming Catalog
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-white/20">
+              NextLevel — Your Gaming Catalog
+            </span>
+            <Link
+              href="/"
+              className="text-xs text-white/20 hover:text-white/40 transition-colors"
+            >
+              About
+            </Link>
+          </div>
           <a
             href="https://www.igdb.com/api"
             target="_blank"

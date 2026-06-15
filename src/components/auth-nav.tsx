@@ -26,7 +26,7 @@ export function AuthNav({ user }: { user: AuthNavUser }) {
   return (
     <nav className="border-b border-white/6 bg-white/1">
       <div className="mx-auto max-w-6xl px-6 h-14 flex items-center gap-6">
-        <Link href="/" className="text-lg font-bold tracking-tight mr-4">
+        <Link href="/dashboard" className="text-lg font-bold tracking-tight mr-4">
           Next<span className="text-primary">Level</span>
         </Link>
 
