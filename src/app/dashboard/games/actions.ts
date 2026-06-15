@@ -102,6 +102,84 @@ export async function addGame(input: AddGameInput): Promise<UserGameRow> {
   };
 }
 
+// Set (add or change) a game's category from the public game page, keyed by
+// igdbId. Preserves an existing rating; updates start/finish timestamps.
+export async function setGameStatus(input: {
+  igdbId: number;
+  category: string;
+}): Promise<void> {
+  const session = await getSession();
+  if (!session) throw new Error("Not authenticated");
+
+  const { igdbId, category } = input;
+
+  const existingGame = await db.query.game.findFirst({
+    where: eq(game.igdbId, igdbId),
+  });
+
+  if (existingGame) {
+    const existingUserGame = await db.query.userGame.findFirst({
+      where: and(
+        eq(userGame.userId, session.user.id),
+        eq(userGame.gameId, existingGame.id)
+      ),
+      columns: { id: true, category: true, startedAt: true, finishedAt: true },
+    });
+
+    if (existingUserGame) {
+      const now = new Date();
+      const timestamps: { startedAt?: Date | null; finishedAt?: Date | null } =
+        {};
+      if (category !== existingUserGame.category) {
+        if (category === "playing" && !existingUserGame.startedAt) {
+          timestamps.startedAt = now;
+        }
+        if (category === "finished") {
+          if (!existingUserGame.startedAt) timestamps.startedAt = now;
+          timestamps.finishedAt = now;
+        }
+      }
+      await db
+        .update(userGame)
+        .set({ category: category as GameCategory, ...timestamps })
+        .where(eq(userGame.id, existingUserGame.id));
+
+      revalidatePath(`/game/${igdbId}`);
+      revalidatePath("/dashboard/games");
+      revalidatePath("/dashboard");
+      return;
+    }
+  }
+
+  // Not yet in catalog — add it fresh (also caches the game if needed).
+  await addGame({ igdbId, category });
+  revalidatePath(`/game/${igdbId}`);
+}
+
+// Remove a game from the catalog by igdbId (for the public game page).
+export async function removeGameStatus(igdbId: number): Promise<void> {
+  const session = await getSession();
+  if (!session) throw new Error("Not authenticated");
+
+  const existingGame = await db.query.game.findFirst({
+    where: eq(game.igdbId, igdbId),
+  });
+  if (!existingGame) return;
+
+  await db
+    .delete(userGame)
+    .where(
+      and(
+        eq(userGame.gameId, existingGame.id),
+        eq(userGame.userId, session.user.id)
+      )
+    );
+
+  revalidatePath(`/game/${igdbId}`);
+  revalidatePath("/dashboard/games");
+  revalidatePath("/dashboard");
+}
+
 interface BulkAddItem {
   igdbId: number;
   category: string;

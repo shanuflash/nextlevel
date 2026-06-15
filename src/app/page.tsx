@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getSession } from "@/src/lib/session";
-import { redirect } from "next/navigation";
 import {
   ScrollReveal,
   StaggerContainer,
@@ -9,7 +8,7 @@ import {
 
 export default async function LandingPage() {
   const session = await getSession();
-  if (session) redirect("/dashboard");
+  const isLoggedIn = !!session;
 
   const steps = [
     {
@@ -44,10 +43,10 @@ export default async function LandingPage() {
               Explore
             </Link>
             <Link
-              href="/login"
+              href={isLoggedIn ? "/dashboard" : "/login"}
               className="px-4 py-2 rounded-full text-sm font-medium bg-white text-black hover:bg-white/90 transition-colors"
             >
-              Sign In
+              {isLoggedIn ? "Dashboard" : "Sign In"}
             </Link>
           </div>
         </nav>
@@ -81,10 +80,10 @@ export default async function LandingPage() {
           <ScrollReveal delay={0.35}>
             <div className="flex items-center justify-center gap-3 mt-10">
               <Link
-                href="/signup"
+                href={isLoggedIn ? "/dashboard" : "/signup"}
                 className="px-6 py-3 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
               >
-                Start tracking &mdash; free
+                {isLoggedIn ? "Go to dashboard" : "Start tracking — free"}
               </Link>
               <Link
                 href="/explore"
@@ -243,10 +242,10 @@ export default async function LandingPage() {
           <ScrollReveal delay={0.2}>
             <div className="flex items-center justify-center gap-3 mt-8">
               <Link
-                href="/signup"
+                href={isLoggedIn ? "/dashboard" : "/signup"}
                 className="px-6 py-3 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
               >
-                Create your catalog
+                {isLoggedIn ? "Go to dashboard" : "Create your catalog"}
               </Link>
               <Link
                 href="/explore"

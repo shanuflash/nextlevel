@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 import { db } from "@/src/lib/auth";
 import { game, userGame } from "@/schema/game-schema";
-import { user } from "@/schema/auth-schema";
-import { eq, and, count } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import { fetchIGDBGame, igdbCover } from "@/src/lib/igdb";
+import { fetchIGDBGame, fetchIGDBGameDetail, igdbImage } from "@/src/lib/igdb";
 import { getSession } from "@/src/lib/session";
 
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
 import { PublicNav } from "@/src/components/public-nav";
-import { Avatar } from "@/src/components/avatar";
-import { CATEGORIES } from "@/src/lib/constants";
-import { GameAddButton } from "./game-add-button";
+import { ScrollReveal } from "@/src/components/scroll-reveal";
+import { HeroBackdrop, HeroInfo } from "./game-hero";
+import { ExpandableText } from "./expandable-text";
+import { MediaGallery } from "./media-gallery";
+import { TrailerPlayer } from "./trailer-player";
+import { DetailsGrid } from "./details-grid";
+import { RelatedCarousel } from "./related-carousel";
 
 export async function generateMetadata({
   params,
@@ -46,19 +49,6 @@ export async function generateMetadata({
   };
 }
 
-interface CategoryStat {
-  category: string;
-  count: number;
-}
-
-interface GameUser {
-  name: string;
-  username: string | null;
-  image: string | null;
-  category: string;
-  rating: number | null;
-}
-
 export default async function GameDetailPage({
   params,
 }: {
@@ -72,6 +62,7 @@ export default async function GameDetailPage({
     where: eq(game.igdbId, igdbId),
   });
 
+  // Keep the thin game-table cache warm for lists / metadata (7-day refresh).
   const STALE_MS = 7 * 24 * 60 * 60 * 1000;
   const now = new Date();
   const isStale =
@@ -100,210 +91,148 @@ export default async function GameDetailPage({
       .catch(() => {});
   }
 
-  const meta = cached
-    ? {
-        igdbId: cached.igdbId,
-        title: cached.title,
-        slug: cached.slug,
-        coverImageId: cached.coverImageId,
-        genres: cached.genres?.split(", ").filter(Boolean) ?? [],
-        platforms: cached.platforms?.split(", ").filter(Boolean) ?? [],
-        releaseDate: cached.releaseDate,
-        summary: cached.summary,
-      }
-    : await fetchIGDBGame(igdbId);
+  // Rich detail, cached live from IGDB (24h via unstable_cache).
+  const detail = await fetchIGDBGameDetail(igdbId);
 
-  if (!meta) notFound();
-
-  const coverUrl = igdbCover(meta.coverImageId);
+  // Hard fail only when we have neither rich data nor a thin cache row.
+  if (!detail && !cached) notFound();
 
   const session = await getSession();
 
-  let categoryStats: CategoryStat[] = [];
-  let usersWithGame: GameUser[] = [];
   let existingCategory: string | null = null;
 
-  if (cached) {
-    const [stats, users, existing] = await Promise.all([
-      db
-        .select({
-          category: userGame.category,
-          count: count(),
-        })
-        .from(userGame)
-        .where(eq(userGame.gameId, cached.id))
-        .groupBy(userGame.category),
-      db
-        .select({
-          name: user.name,
-          username: user.username,
-          image: user.image,
-          category: userGame.category,
-          rating: userGame.rating,
-        })
-        .from(userGame)
-        .innerJoin(user, eq(userGame.userId, user.id))
-        .where(eq(userGame.gameId, cached.id))
-        .limit(10),
-      session
-        ? db.query.userGame.findFirst({
-            where: and(
-              eq(userGame.userId, session.user.id),
-              eq(userGame.gameId, cached.id)
-            ),
-            columns: { category: true },
-          })
-        : null,
-    ]);
-    categoryStats = stats;
-    usersWithGame = users;
+  if (cached && session) {
+    const existing = await db.query.userGame.findFirst({
+      where: and(
+        eq(userGame.userId, session.user.id),
+        eq(userGame.gameId, cached.id)
+      ),
+      columns: { category: true },
+    });
     existingCategory = existing?.category ?? null;
   }
 
-  const totalUsers = categoryStats.reduce((sum, c) => sum + c.count, 0);
+  // Graceful fallback: IGDB rich fetch failed but we have thin cache.
+  if (!detail && cached) {
+    return (
+      <div className="min-h-screen bg-[#09090d] text-white">
+        <PublicNav />
+        <div className="mx-auto max-w-6xl px-6 py-10">
+          <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 mb-10">
+            <div className="w-40 sm:w-52 flex-none mx-auto sm:mx-0">
+              <div className="aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/10 relative">
+                {cached.coverImageId && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={
+                      igdbImage(cached.coverImageId, "t_cover_big_2x") ?? undefined
+                    }
+                    alt={cached.title}
+                    className="size-full object-cover"
+                  />
+                )}
+              </div>
+            </div>
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold">{cached.title}</h1>
+              {cached.summary && (
+                <p className="text-white/50 text-sm mt-4 leading-relaxed max-w-xl">
+                  {cached.summary}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!detail) notFound();
+
+  const aboutText = detail.summary ?? detail.storyline;
+  const hasMedia =
+    detail.videos.length > 0 || detail.screenshotImageIds.length > 0;
+  const hasRelated =
+    detail.similarGames.length > 0 ||
+    detail.dlcs.length > 0 ||
+    detail.expansions.length > 0;
 
   return (
     <div className="min-h-screen bg-[#09090d] text-white">
       <PublicNav />
 
-      <div className="mx-auto max-w-6xl px-6 py-10">
-        <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 mb-10">
-          <div className="w-36 sm:w-48 flex-none mx-auto sm:mx-0">
-            <div className="aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/10 relative">
-              {coverUrl ? (
-                <Image
-                  src={coverUrl}
-                  alt={meta.title}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 640px) 144px, 192px"
-                />
-              ) : (
-                <div className="size-full bg-white/5" />
-              )}
-            </div>
-          </div>
-          <div className="flex-1 sm:py-2">
-            <h1 className="text-3xl font-bold">{meta.title}</h1>
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              {meta.genres.map((g) => (
-                <span
-                  key={g}
-                  className="text-xs text-white/40 bg-white/8 px-2.5 py-1 rounded-lg border border-white/8"
-                >
-                  {g}
-                </span>
-              ))}
-              {meta.platforms.length > 0 && (
-                <span className="text-xs text-white/40 bg-white/8 px-2.5 py-1 rounded-lg border border-white/8">
-                  {meta.platforms.join(", ")}
-                </span>
-              )}
-              {meta.releaseDate && (
-                <span className="text-xs text-white/30">
-                  {meta.releaseDate.slice(0, 4)}
-                </span>
-              )}
-            </div>
-            {meta.summary && (
-              <p className="text-white/50 text-sm mt-4 leading-relaxed max-w-xl">
-                {meta.summary}
-              </p>
-            )}
-            <div className="mt-6">
-              <GameAddButton
+      <div className="relative">
+        <HeroBackdrop detail={detail} />
+
+        <main className="relative mx-auto max-w-6xl px-6 pt-16 sm:pt-40 pb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 lg:items-start">
+            {/* Left: hero info, then the page content */}
+            <div className="lg:col-span-2 min-w-0">
+              <HeroInfo
+                detail={detail}
                 igdbId={igdbId}
                 isLoggedIn={!!session}
                 existingCategory={existingCategory}
               />
-            </div>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-white/3 rounded-2xl border border-white/8 p-6">
-            <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-4">
-              Community Stats
-            </h2>
-            {totalUsers === 0 ? (
-              <p className="text-white/30 text-sm">
-                No one has added this game yet. Be the first!
-              </p>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-white/50 mb-4">
-                  <span className="text-white font-semibold">{totalUsers}</span>{" "}
-                  user{totalUsers !== 1 ? "s" : ""} tracking this game
-                </p>
-                {CATEGORIES.map((cat) => {
-                  const stat = categoryStats.find((s) => s.category === cat.id);
-                  const catCount = stat?.count ?? 0;
-                  const pct =
-                    totalUsers > 0
-                      ? Math.round((catCount / totalUsers) * 100)
-                      : 0;
-                  return (
-                    <div key={cat.id} className="flex items-center gap-3">
-                      <span className="text-sm w-28 flex-none">
-                        {cat.label}
-                      </span>
-                      <div className="flex-1 h-2 rounded-full bg-white/8 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${cat.bar}`}
-                          style={{ width: `${pct}%` }}
+              <div className="mt-12 space-y-12">
+                {aboutText && (
+              <ScrollReveal>
+                <section>
+                  <h2 className="text-lg font-semibold mb-3">About</h2>
+                  <ExpandableText text={aboutText} />
+                  {detail.summary && detail.storyline && (
+                    <details className="group mt-4 rounded-xl border border-white/8 bg-white/3">
+                      <summary className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-white/70 cursor-pointer hover:text-white transition-colors list-none select-none">
+                        <HugeiconsIcon
+                          icon={ArrowDown01Icon}
+                          className="size-4 text-white/40 transition-transform group-open:rotate-180"
+                          strokeWidth={2}
                         />
-                      </div>
-                      <span className="text-xs text-white/40 w-16 text-right">
-                        {catCount} ({pct}%)
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+                        Show storyline
+                      </summary>
+                      <p className="text-white/55 text-sm leading-relaxed whitespace-pre-line px-4 pb-4">
+                        {detail.storyline}
+                      </p>
+                    </details>
+                  )}
+                </section>
+              </ScrollReveal>
             )}
-          </div>
 
-          <div className="bg-white/3 rounded-2xl border border-white/8 p-6">
-            <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-4">
-              Users
-            </h2>
-            {usersWithGame.length === 0 ? (
-              <p className="text-white/30 text-sm">No users yet.</p>
-            ) : (
-              <div className="space-y-3">
-                {usersWithGame
-                  .filter((u) => u.username)
-                  .map((u) => {
-                    const cat = CATEGORIES.find((c) => c.id === u.category);
-                    return (
-                      <Link
-                        key={u.username}
-                        href={`/u/${u.username}`}
-                        className="flex items-center gap-3 hover:bg-white/5 -mx-2 px-2 py-1.5 rounded-lg transition-colors"
-                      >
-                        <Avatar name={u.name} image={u.image} size="sm" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {u.name}
-                          </p>
-                        </div>
-                        {cat && (
-                          <span className={`text-[10px] ${cat.color}`}>
-                            {cat.label}
-                          </span>
-                        )}
-                        {u.rating && (
-                          <span className="text-[10px] text-amber-400 font-bold">
-                            ★ {u.rating}
-                          </span>
-                        )}
-                      </Link>
-                    );
-                  })}
-              </div>
+            {hasMedia && (
+              <ScrollReveal>
+                <section id="media" className="space-y-6 scroll-mt-6">
+                  <h2 className="text-lg font-semibold">Media</h2>
+                  <TrailerPlayer videos={detail.videos} />
+                  <MediaGallery imageIds={detail.screenshotImageIds} />
+                </section>
+              </ScrollReveal>
             )}
+
+            {hasRelated && (
+              <ScrollReveal>
+                <div className="space-y-10">
+                  <RelatedCarousel
+                    title="Expansions"
+                    games={detail.expansions}
+                  />
+                  <RelatedCarousel title="DLC & Add-ons" games={detail.dlcs} />
+                  <RelatedCarousel
+                    title="Similar games"
+                    games={detail.similarGames}
+                  />
+                </div>
+              </ScrollReveal>
+            )}
+              </div>
+            </div>
+
+            <aside className="lg:sticky lg:top-6 lg:self-start">
+              <DetailsGrid detail={detail} />
+            </aside>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );
