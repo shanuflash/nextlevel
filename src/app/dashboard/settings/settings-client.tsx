@@ -43,7 +43,7 @@ export function SettingsClient({ user }: { user: UserData }) {
   return (
     <div className="max-w-xl space-y-10">
       <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">Settings</h1>
         <p className="text-white/40 text-sm mt-1">
           Manage your profile and account.
         </p>

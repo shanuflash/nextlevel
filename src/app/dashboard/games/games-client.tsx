@@ -852,7 +852,7 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">My Games</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">My Games</h1>
           <p className="text-white/40 text-sm mt-1">
             {games.length} game{games.length !== 1 ? "s" : ""} in your catalog
           </p>

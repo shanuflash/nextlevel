@@ -130,4 +130,12 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Headings are tightened once here instead of repeating `tracking-tight`
+     on every heading in markup. Space Grotesk is the single UI font, so no
+     per-heading font-family is needed either. */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.025em;
+  }
 }

@@ -32,7 +32,7 @@ export default async function LandingPage() {
     <div className="min-h-screen bg-[#09090d] text-white overflow-hidden">
       <ScrollReveal y={-10}>
         <nav className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between relative z-10">
-          <h1 className="text-xl font-bold tracking-tight">
+          <h1 className="text-xl font-bold">
             Next<span className="text-primary">Level</span>
           </h1>
           <div className="flex items-center gap-4">
@@ -63,7 +63,7 @@ export default async function LandingPage() {
           </ScrollReveal>
 
           <ScrollReveal delay={0.15}>
-            <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.08] max-w-3xl mx-auto">
+            <h2 className="text-5xl sm:text-6xl lg:text-8xl font-bold tracking-[-0.03em] leading-[0.95] max-w-4xl mx-auto">
               Track games.
               <br />
               <span className="text-primary">Share your taste.</span>
@@ -103,7 +103,7 @@ export default async function LandingPage() {
               <p className="text-xs font-medium uppercase tracking-wider text-white/30 mb-4">
                 Organize
               </p>
-              <h3 className="text-xl font-bold leading-snug">
+              <h3 className="text-2xl font-bold leading-tight">
                 Five categories.
                 <br />
                 <span className="text-white/50">One clean library.</span>
@@ -149,7 +149,7 @@ export default async function LandingPage() {
             <p className="text-xs font-medium uppercase tracking-wider text-white/30 mb-3">
               Search
             </p>
-            <h3 className="text-base font-bold">200,000+ games from IGDB</h3>
+            <h3 className="text-lg font-bold">200,000+ games from IGDB</h3>
             <p className="text-white/40 text-sm mt-1.5 leading-relaxed">
               Search by name or ID. Every game you&apos;ve ever played is
               already in the database.
@@ -160,7 +160,7 @@ export default async function LandingPage() {
             <p className="text-xs font-medium uppercase tracking-wider text-white/30 mb-3">
               Bulk add
             </p>
-            <h3 className="text-base font-bold">Add games in batches</h3>
+            <h3 className="text-lg font-bold">Add games in batches</h3>
             <p className="text-white/40 text-sm mt-1.5 leading-relaxed">
               Queue up your whole backlog and add everything at once. Build your
               catalog in minutes, not hours.
@@ -174,7 +174,7 @@ export default async function LandingPage() {
                 <p className="text-xs font-medium uppercase tracking-wider text-white/30 mb-3">
                   Share
                 </p>
-                <h3 className="text-xl font-bold leading-snug">
+                <h3 className="text-2xl font-bold leading-tight">
                   Your profile at{" "}
                   <span className="text-primary">/u/yourname</span>
                 </h3>
@@ -230,7 +230,7 @@ export default async function LandingPage() {
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
         <div className="text-center relative z-10">
           <ScrollReveal>
-            <h3 className="text-3xl sm:text-4xl font-bold tracking-tight">
+            <h3 className="text-4xl sm:text-5xl font-bold tracking-[-0.02em]">
               Ready to start?
             </h3>
           </ScrollReveal>

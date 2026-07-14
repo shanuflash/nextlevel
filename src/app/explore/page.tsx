@@ -51,7 +51,7 @@ export default async function ExplorePage() {
 
       <div className="mx-auto max-w-6xl px-6 py-10 space-y-12">
         <div>
-          <h1 className="text-3xl font-bold">Explore</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold">Explore</h1>
           <p className="text-white/40 text-sm mt-1">
             Popular games and user catalogs.
           </p>

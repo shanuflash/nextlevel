@@ -81,7 +81,7 @@ export function HeroInfo({
             {detail.franchise}
           </span>
         )}
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-balance">
+        <h1 className="text-3xl sm:text-4xl font-bold leading-[1.05] text-balance">
           {detail.title}
         </h1>
 

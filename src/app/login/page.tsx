@@ -50,7 +50,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#09090d] text-white flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-3xl font-bold">
             Next<span className="text-primary">Level</span>
           </h1>
           <p className="text-white/40 text-sm mt-2">
@@ -60,7 +60,7 @@ export default function LoginPage() {
 
         <div className="bg-white/3 rounded-3xl border border-white/8 p-8 space-y-6">
           <div className="text-center">
-            <h2 className="text-lg font-semibold">Welcome back</h2>
+            <h2 className="text-xl font-bold">Welcome back</h2>
             <p className="text-white/40 text-sm mt-1">
               Sign in to manage your game catalog
             </p>

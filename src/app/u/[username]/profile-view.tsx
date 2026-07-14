@@ -270,7 +270,7 @@ function BentoHeader({ profile }: { profile: ProfileData }) {
           showRing
         />
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-2xl font-bold">
             {profile.displayName}
           </h1>
           <p className="text-white/40">@{profile.username}</p>
@@ -282,13 +282,13 @@ function BentoHeader({ profile }: { profile: ProfileData }) {
       <div className="bg-white/3 rounded-3xl border border-white/8 p-5 sm:p-8 flex flex-col justify-center">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <div className="text-3xl font-bold text-primary">
+            <div className="text-3xl font-bold tabular-nums text-primary">
               {profile.totalGames}
             </div>
             <div className="text-xs text-white/40 mt-1">Total Games</div>
           </div>
           <div>
-            <div className="text-3xl font-bold text-emerald-400">
+            <div className="text-3xl font-bold tabular-nums text-emerald-400">
               {profile.finishedCount}
             </div>
             <div className="text-xs text-white/40 mt-1">Completed</div>

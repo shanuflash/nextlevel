@@ -36,7 +36,10 @@ export async function PublicNav() {
   return (
     <nav className="border-b border-white/6 bg-white/1">
       <div className="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between">
-        <Link href="/dashboard" className="text-lg font-bold tracking-tight">
+        <Link
+          href="/dashboard"
+          className="text-lg font-bold"
+        >
           Next<span className="text-primary">Level</span>
         </Link>
         <div className="flex items-center gap-3">

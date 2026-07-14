@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import { DM_Sans, Geist, Geist_Mono } from "next/font/google";
+import { Space_Grotesk, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/src/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/next";
 import { PortalWidget } from "shanu-portal-widget";
 
-const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Space Grotesk is the single UI typeface — body AND display. Full weight
+// range so body copy (400/500) and headings (600/700) all use it.
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -40,10 +41,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={dmSans.variable}>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="en" className={spaceGrotesk.variable}>
+      <body className={`${geistMono.variable} antialiased`}>
         {children}
         <PortalWidget />
         <Toaster />
