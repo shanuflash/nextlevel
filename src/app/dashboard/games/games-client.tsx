@@ -7,7 +7,6 @@ import { addGame, updateGame, removeGame, bulkAddGames } from "./actions";
 import { igdbCover, type IGDBGameMeta } from "@/src/lib/igdb";
 import { CATEGORIES } from "@/src/lib/constants";
 import { toast } from "sonner";
-import { RatingSlider } from "@/src/components/rating-slider";
 import type { UserGameRow } from "@/src/lib/types";
 
 export type { UserGameRow };
@@ -27,7 +26,6 @@ function AddGameDialog({
   const [hasSearched, setHasSearched] = useState(false);
   const [selected, setSelected] = useState<IGDBGameMeta | null>(null);
   const [category, setCategory] = useState("finished");
-  const [rating, setRating] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
   const abortRef = useRef<AbortController>(null);
@@ -80,7 +78,6 @@ function AddGameDialog({
       const row = await addGame({
         igdbId: selected.igdbId,
         category,
-        rating: rating ? parseFloat(rating) : undefined,
       });
       onAdded([row]);
       toast.success(`Added "${selected.title}" to your catalog`);
@@ -253,16 +250,6 @@ function AddGameDialog({
                   ))}
                 </div>
               </div>
-
-              <div>
-                <label className="text-xs text-white/40 block mb-1.5">
-                  Rating (1-10)
-                </label>
-                <RatingSlider
-                  value={rating ? parseFloat(rating) : null}
-                  onChange={(v) => setRating(v ? String(v) : "")}
-                />
-              </div>
             </>
           )}
         </div>
@@ -296,7 +283,6 @@ interface QueuedGame {
   genres: string[];
   releaseDate: string | null;
   category: string;
-  rating: string;
 }
 
 function BulkAddDialog({
@@ -369,7 +355,6 @@ function BulkAddDialog({
         genres: game.genres,
         releaseDate: game.releaseDate,
         category: defaultCategory,
-        rating: "",
       },
     ]);
   }
@@ -385,7 +370,6 @@ function BulkAddDialog({
       const items = queue.map((q) => ({
         igdbId: q.igdbId,
         category: q.category,
-        rating: q.rating ? parseFloat(q.rating) : undefined,
       }));
       const results = await bulkAddGames(items);
       const addedRows = results
@@ -604,18 +588,17 @@ function EditGameDialog({
 }: {
   game: UserGameRow;
   onClose: () => void;
-  onOptimisticUpdate: (id: string, category: string, rating: number | null) => void;
+  onOptimisticUpdate: (id: string, category: string) => void;
   onOptimisticRemove: (id: string) => void;
   onRevert: (game: UserGameRow) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editCategory, setEditCategory] = useState(game.category);
-  const [editRating, setEditRating] = useState<number | null>(game.rating);
   const coverUrl = igdbCover(game.coverImageId, "t_cover_big");
   const cat = CATEGORIES.find((c) => c.id === game.category);
 
   async function handleSubmit(formData: FormData) {
-    onOptimisticUpdate(game.id, editCategory, editRating);
+    onOptimisticUpdate(game.id, editCategory);
     onClose();
     try {
       await updateGame(formData);
@@ -686,11 +669,6 @@ function EditGameDialog({
                   {cat.label}
                 </span>
               )}
-              {game.rating && (
-                <span className="text-xs font-bold text-amber-400">
-                  ★ {game.rating}/10
-                </span>
-              )}
             </div>
           )}
 
@@ -719,17 +697,6 @@ function EditGameDialog({
                     </button>
                   ))}
                 </div>
-              </div>
-
-              <div>
-                <label className="text-xs text-white/40 block mb-1.5">
-                  Rating (1-10)
-                </label>
-                <RatingSlider
-                  value={editRating}
-                  onChange={setEditRating}
-                  name="rating"
-                />
               </div>
 
               <div className="flex justify-between pt-1">
@@ -781,7 +748,7 @@ function EditGameDialog({
   );
 }
 
-type SortBy = "newest" | "oldest" | "a-z" | "z-a" | "rating";
+type SortBy = "newest" | "oldest" | "a-z" | "z-a";
 
 export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
   const [games, setGames] = useState(initialGames);
@@ -793,9 +760,9 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
 
   const existingIgdbIds = new Set(games.map((g) => g.igdbId));
 
-  function handleOptimisticUpdate(id: string, category: string, rating: number | null) {
+  function handleOptimisticUpdate(id: string, category: string) {
     setGames((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, category, rating } : g))
+      prev.map((g) => (g.id === id ? { ...g, category } : g))
     );
   }
 
@@ -829,12 +796,6 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
     if (sortBy === "a-z" || sortBy === "z-a") {
       const cmp = a.title.localeCompare(b.title);
       return sortBy === "a-z" ? cmp : -cmp;
-    }
-    if (sortBy === "rating") {
-      const aRating = a.rating ?? -1;
-      const bRating = b.rating ?? -1;
-      if (bRating !== aRating) return bRating - aRating;
-      return a.title.localeCompare(b.title);
     }
     const aTime =
       a.updatedAt instanceof Date
@@ -908,7 +869,6 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
             [
               { id: "a-z", label: "A–Z" },
               { id: "z-a", label: "Z–A" },
-              { id: "rating", label: "Rating" },
               { id: "newest", label: "Newest" },
               { id: "oldest", label: "Oldest" },
             ] as const
@@ -958,11 +918,6 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
                     />
                   ) : (
                     <div className="size-full bg-white/5" />
-                  )}
-                  {g.rating && (
-                    <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                      ★ {g.rating}
-                    </div>
                   )}
                   <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 via-black/30 to-transparent p-3 pt-10">
                     <p className="text-xs font-semibold leading-tight line-clamp-2">

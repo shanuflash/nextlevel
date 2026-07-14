@@ -11,41 +11,23 @@ export default function DashboardLoading() {
         <Skeleton className="h-9 w-52 rounded-lg" />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className="relative bg-white/3 rounded-2xl border border-white/8 p-5 overflow-hidden"
-          >
-            <Skeleton className="h-8 w-10 rounded-md" />
-            <Skeleton className="h-3 w-16 rounded-md mt-2" />
+      {/* Lean stat bar */}
+      <Skeleton className="h-18.5 rounded-2xl" />
+
+      {/* Three cover rows: Playing, Anticipated, Released */}
+      {Array.from({ length: 3 }).map((_, row) => (
+        <div key={row}>
+          <Skeleton className="h-3.5 w-28 rounded-md mb-4" />
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton
+                key={i}
+                className="aspect-3/4 rounded-2xl ring-1 ring-white/8"
+              />
+            ))}
           </div>
-        ))}
-      </div>
-
-      <div>
-        <Skeleton className="h-3.5 w-28 rounded-md mb-4" />
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton
-              key={i}
-              className="aspect-3/4 rounded-2xl ring-1 ring-white/8"
-            />
-          ))}
         </div>
-      </div>
-
-      <div>
-        <Skeleton className="h-3.5 w-32 rounded-md mb-4" />
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton
-              key={i}
-              className="aspect-3/4 rounded-2xl ring-1 ring-white/8"
-            />
-          ))}
-        </div>
-      </div>
+      ))}
     </div>
   );
 }

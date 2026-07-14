@@ -2,7 +2,7 @@ import { Skeleton } from "@/src/components/ui/skeleton";
 
 export default function SettingsLoading() {
   return (
-    <div className="max-w-xl space-y-10">
+    <div className="max-w-xl space-y-8">
       <div>
         <Skeleton className="h-8 w-28 rounded-lg" />
         <Skeleton className="h-4 w-52 rounded-lg mt-2" />
@@ -10,8 +10,8 @@ export default function SettingsLoading() {
 
       {/* Profile section */}
       <section>
-        <Skeleton className="h-3 w-14 rounded-md mb-4" />
-        <div className="bg-white/3 rounded-2xl border border-white/6 divide-y divide-white/6">
+        <Skeleton className="h-3.5 w-14 rounded-md mb-4" />
+        <div className="bg-white/3 rounded-2xl border border-white/8 divide-y divide-white/8">
           <div className="p-5 flex items-center gap-4">
             <Skeleton className="size-10 rounded-full" />
             <div>
@@ -39,8 +39,8 @@ export default function SettingsLoading() {
 
       {/* Security section */}
       <section>
-        <Skeleton className="h-3 w-16 rounded-md mb-4" />
-        <div className="bg-white/3 rounded-2xl border border-white/6 divide-y divide-white/6">
+        <Skeleton className="h-3.5 w-16 rounded-md mb-4" />
+        <div className="bg-white/3 rounded-2xl border border-white/8 divide-y divide-white/8">
           <div className="p-5">
             <Skeleton className="h-3 w-28 rounded-md mb-2" />
             <Skeleton className="h-10 w-full rounded-xl" />

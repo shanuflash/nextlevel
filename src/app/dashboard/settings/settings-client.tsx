@@ -41,7 +41,7 @@ function Message({ message }: { message: FormMessage }) {
 
 export function SettingsClient({ user }: { user: UserData }) {
   return (
-    <div className="max-w-xl space-y-10">
+    <div className="max-w-xl space-y-8">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold">Settings</h1>
         <p className="text-white/40 text-sm mt-1">
@@ -79,7 +79,7 @@ function ProfileSection({ user }: { user: UserData }) {
 
   return (
     <section>
-      <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-4">
+      <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">
         Profile
       </h2>
 
@@ -269,7 +269,7 @@ function SecuritySection({ user }: { user: UserData }) {
 
   return (
     <section>
-      <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-4">
+      <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">
         Security
       </h2>
 

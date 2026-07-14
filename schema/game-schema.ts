@@ -51,6 +51,8 @@ export const userGame = sqliteTable(
     category: text("category", {
       enum: ["finished", "playing", "want-to-play", "on-hold", "dropped"],
     }).notNull(),
+    // Deprecated: user ratings were sunset. Column retained (nullable) to avoid
+    // a destructive migration; no code reads or writes it anymore.
     rating: real("rating"),
     notes: text("notes"),
     startedAt: integer("started_at", { mode: "timestamp_ms" }),

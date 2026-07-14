@@ -2,7 +2,7 @@ import { getSession } from "@/src/lib/session";
 import { db } from "@/src/lib/auth";
 import { game, userGame } from "@/schema/game-schema";
 import { user } from "@/schema/auth-schema";
-import { eq, count, desc } from "drizzle-orm";
+import { eq, and, count, desc } from "drizzle-orm";
 import { ProfileUrlCopy } from "./profile-url-copy";
 import { DashboardStats } from "./dashboard-stats";
 import { GameCard } from "@/src/components/game-card";
@@ -36,8 +36,14 @@ export default async function DashboardPage() {
 
   const userId = session.user.id;
 
-  const [categoryCounts, hypeGames, recentGames, dbUser, popularGames] =
-    await Promise.all([
+  const [
+    categoryCounts,
+    hypeGames,
+    recentGames,
+    dbUser,
+    popularGames,
+    playingGames,
+  ] = await Promise.all([
       db
         .select({
           category: userGame.category,
@@ -72,6 +78,18 @@ export default async function DashboardPage() {
         .from(game)
         .orderBy(desc(game.popularity))
         .limit(10),
+      db
+        .select({
+          igdbId: game.igdbId,
+          title: game.title,
+          coverImageId: game.coverImageId,
+          genres: game.genres,
+        })
+        .from(userGame)
+        .innerJoin(game, eq(userGame.gameId, game.id))
+        .where(and(eq(userGame.userId, userId), eq(userGame.category, "playing")))
+        .orderBy(desc(userGame.updatedAt))
+        .limit(12),
     ]);
 
   const username = dbUser?.username;
@@ -100,6 +118,26 @@ export default async function DashboardPage() {
         categoryMap={categoryMap}
         popularGames={popularGames}
       />
+
+      {playingGames.length > 0 && (
+        <div>
+          <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">
+            Now Playing
+            <span className="text-white/30 ml-2">({playingGames.length})</span>
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {playingGames.map((g) => (
+              <GameCard
+                key={g.igdbId}
+                href={`/game/${g.igdbId}`}
+                title={g.title}
+                coverImageId={g.coverImageId}
+                subtitle={g.genres?.split(", ").slice(0, 2).join(" · ")}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {hypeGames.length > 0 && (
         <div>

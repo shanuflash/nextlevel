@@ -13,12 +13,10 @@ import {
 } from "@/src/lib/constants";
 import { updateGame, removeGame } from "@/src/app/dashboard/games/actions";
 import { toast } from "sonner";
-import { RatingSlider } from "@/src/components/rating-slider";
 
 interface GameItem {
   id: string;
   category: string;
-  rating: number | null;
   igdbId: number;
   title: string;
   slug: string;
@@ -45,12 +43,14 @@ interface ProfileData {
   categories: Category[];
 }
 
+type GameWithCat = GameItem & { categoryId: string; categoryLabel: string };
+
 function isReleased(releaseDate: string | null): boolean {
   if (!releaseDate) return false;
   return releaseDate <= new Date().toISOString().split("T")[0];
 }
 
-// Cycling aspect ratios for visual variety in the masonry layout
+// Cycling aspect ratios give the masonry grid its varied-height rhythm.
 const ASPECT_RATIOS = [
   "aspect-[3/4]",
   "aspect-[2/3]",
@@ -62,6 +62,19 @@ const ASPECT_RATIOS = [
   "aspect-[3/4]",
 ];
 
+// Small category flag shown on each cover — the color dot + label carry the
+// tracking state now that there are no rating badges.
+function CategoryFlag({ categoryId }: { categoryId: string }) {
+  const cat = CATEGORIES.find((c) => c.id === categoryId);
+  if (!cat) return null;
+  return (
+    <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm px-2 py-1 text-[10px] font-semibold text-white/90">
+      <span className={`size-2 rounded-full ${cat.bar}`} />
+      {cat.label}
+    </div>
+  );
+}
+
 /* ─── Game Detail / Edit Modal ─── */
 
 function GameModal({
@@ -69,14 +82,13 @@ function GameModal({
   isOwner,
   onClose,
 }: {
-  game: GameItem & { categoryId: string; categoryLabel: string };
+  game: GameWithCat;
   isOwner: boolean;
   onClose: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [editCategory, setEditCategory] = useState(game.category);
-  const [editRating, setEditRating] = useState<number | null>(game.rating);
   const coverUrl = igdbCover(game.coverImageId, "t_cover_big");
   const cat = CATEGORIES.find((c) => c.id === game.category);
 
@@ -145,23 +157,16 @@ function GameModal({
           </div>
 
           {/* Current status */}
-          {!isEditing && (
+          {!isEditing && cat && (
             <div className="flex items-center gap-3">
-              {cat && (
-                <span
-                  className={`text-xs font-medium px-2.5 py-1 rounded-lg border ${
-                    CATEGORY_BADGE_COLORS[game.categoryId] ??
-                    "bg-white/10 text-white/60 border-white/20"
-                  }`}
-                >
-                  {game.categoryLabel}
-                </span>
-              )}
-              {game.rating && (
-                <span className="text-xs font-bold text-amber-400">
-                  ★ {game.rating}/10
-                </span>
-              )}
+              <span
+                className={`text-xs font-medium px-2.5 py-1 rounded-lg border ${
+                  CATEGORY_BADGE_COLORS[game.categoryId] ??
+                  "bg-white/10 text-white/60 border-white/20"
+                }`}
+              >
+                {game.categoryLabel}
+              </span>
             </div>
           )}
 
@@ -191,17 +196,6 @@ function GameModal({
                     </button>
                   ))}
                 </div>
-              </div>
-
-              <div>
-                <label className="text-xs text-white/40 block mb-1.5">
-                  Rating (1-10)
-                </label>
-                <RatingSlider
-                  value={editRating}
-                  onChange={setEditRating}
-                  name="rating"
-                />
               </div>
 
               <div className="flex justify-between pt-1">
@@ -257,54 +251,88 @@ function GameModal({
   );
 }
 
-/* ─── Bento Header ─── */
+/* ─── Identity + Stats (bento) ─── */
 
-function BentoHeader({ profile }: { profile: ProfileData }) {
+function ProfileHeader({
+  profile,
+  counts,
+}: {
+  profile: ProfileData;
+  counts: Record<string, number>;
+}) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-      <div className="md:col-span-2 bg-white/3 rounded-3xl border border-white/8 p-5 sm:p-8 flex items-center gap-4 sm:gap-6">
-        <Avatar
-          name={profile.displayName}
-          image={profile.avatarUrl}
-          size="lg"
-          showRing
-        />
-        <div>
-          <h1 className="text-2xl font-bold">
-            {profile.displayName}
-          </h1>
-          <p className="text-white/40">@{profile.username}</p>
-          {profile.bio && (
-            <p className="text-white/50 mt-2 text-sm max-w-md">{profile.bio}</p>
-          )}
+    <div className="mb-6 space-y-4">
+      {/* Identity + headline stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="col-span-2 flex items-center gap-4 sm:gap-5 rounded-3xl border border-white/8 bg-white/3 p-5 sm:p-6">
+          <Avatar
+            name={profile.displayName}
+            image={profile.avatarUrl}
+            size="lg"
+            showRing
+          />
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold truncate">
+              {profile.displayName}
+            </h1>
+            <p className="text-white/40 text-sm">@{profile.username}</p>
+            {profile.bio && (
+              <p className="text-white/55 mt-2 text-sm line-clamp-2 max-w-sm">
+                {profile.bio}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="relative overflow-hidden rounded-3xl border border-white/8 bg-white/3 p-5 sm:p-6 flex flex-col justify-center">
+          <div className="text-3xl font-bold tabular-nums text-primary leading-none">
+            {profile.totalGames}
+          </div>
+          <div className="text-xs text-white/40 mt-2">Total Games</div>
+          <div className="absolute inset-x-0 bottom-0 h-0.75 bg-primary" />
+        </div>
+        <div className="relative overflow-hidden rounded-3xl border border-white/8 bg-white/3 p-5 sm:p-6 flex flex-col justify-center">
+          <div className="text-3xl font-bold tabular-nums text-emerald-400 leading-none">
+            {profile.finishedCount}
+          </div>
+          <div className="text-xs text-white/40 mt-2">Finished</div>
+          <div className="absolute inset-x-0 bottom-0 h-0.75 bg-emerald-500" />
         </div>
       </div>
-      <div className="bg-white/3 rounded-3xl border border-white/8 p-5 sm:p-8 flex flex-col justify-center">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div className="text-3xl font-bold tabular-nums text-primary">
-              {profile.totalGames}
-            </div>
-            <div className="text-xs text-white/40 mt-1">Total Games</div>
+
+      {/* Secondary category strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="rounded-2xl border border-white/8 bg-white/3 px-4 py-4">
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-blue-400">
+            {counts["playing"] || 0}
           </div>
-          <div>
-            <div className="text-3xl font-bold tabular-nums text-emerald-400">
-              {profile.finishedCount}
-            </div>
-            <div className="text-xs text-white/40 mt-1">Completed</div>
+          <div className="text-xs text-white/40 mt-1.5 flex items-center gap-1.5">
+            <span className="size-2 rounded-full bg-blue-400" />
+            Playing
           </div>
-          <div>
-            <div className="text-sm font-semibold text-white/80">
-              {profile.favoriteGenre}
-            </div>
-            <div className="text-xs text-white/40 mt-1">Top Genre</div>
+        </div>
+        <div className="rounded-2xl border border-white/8 bg-white/3 px-4 py-4">
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-amber-400">
+            {counts["want-to-play"] || 0}
           </div>
-          <div>
-            <div className="text-sm font-semibold text-white/80">
-              {profile.joinedDate}
-            </div>
-            <div className="text-xs text-white/40 mt-1">Member Since</div>
+          <div className="text-xs text-white/40 mt-1.5 flex items-center gap-1.5">
+            <span className="size-2 rounded-full bg-amber-400" />
+            Want to Play
           </div>
+        </div>
+        <div className="rounded-2xl border border-white/8 bg-white/3 px-4 py-4">
+          <div className="text-xl sm:text-2xl font-bold tabular-nums text-orange-400">
+            {counts["on-hold"] || 0}
+          </div>
+          <div className="text-xs text-white/40 mt-1.5 flex items-center gap-1.5">
+            <span className="size-2 rounded-full bg-orange-400" />
+            On Hold
+          </div>
+        </div>
+        <div className="rounded-2xl border border-white/8 bg-white/3 px-4 py-4">
+          <div className="text-xl sm:text-2xl font-bold text-white/80 truncate">
+            {profile.favoriteGenre}
+          </div>
+          <div className="text-xs text-white/40 mt-1.5">Top Genre</div>
         </div>
       </div>
     </div>
@@ -316,18 +344,15 @@ function BentoHeader({ profile }: { profile: ProfileData }) {
 function GameCard({
   game,
   aspect,
-  activeCategory,
+  showFlag,
   onSelect,
 }: {
-  game: GameItem & { categoryId: string; categoryLabel: string };
+  game: GameWithCat;
   aspect: string;
-  activeCategory: string;
-  onSelect: (
-    g: GameItem & { categoryId: string; categoryLabel: string }
-  ) => void;
+  showFlag: boolean;
+  onSelect: (g: GameWithCat) => void;
 }) {
   const coverUrl = igdbCover(game.coverImageId);
-  const cat = CATEGORIES.find((c) => c.id === game.categoryId);
   return (
     <button
       onClick={() => onSelect(game)}
@@ -342,23 +367,16 @@ function GameCard({
             alt={game.title}
             fill
             className="object-cover"
-            sizes="(max-width: 640px) 33vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+            sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 16vw"
           />
         ) : (
           <div className="size-full bg-white/5" />
         )}
-        {game.rating && (
-          <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-            ★ {game.rating}
-          </div>
-        )}
+        {showFlag && <CategoryFlag categoryId={game.categoryId} />}
         <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 via-black/30 to-transparent p-3 pt-10">
           <p className="text-xs font-semibold leading-tight line-clamp-2">
             {game.title}
           </p>
-          {activeCategory === "all" && cat && (
-            <p className={`text-[10px] mt-0.5 ${cat.color}`}>{cat.label}</p>
-          )}
         </div>
       </div>
     </button>
@@ -366,14 +384,14 @@ function GameCard({
 }
 
 function useColumnCount() {
-  const [cols, setCols] = useState(2);
+  const [cols, setCols] = useState(3);
   useEffect(() => {
     function update() {
       const w = window.innerWidth;
-      if (w >= 1024) setCols(5);
-      else if (w >= 768) setCols(4);
-      else if (w >= 640) setCols(3);
-      else setCols(2);
+      if (w >= 1024) setCols(6);
+      else if (w >= 768) setCols(5);
+      else if (w >= 640) setCols(4);
+      else setCols(3);
     }
     update();
     window.addEventListener("resize", update);
@@ -384,27 +402,25 @@ function useColumnCount() {
 
 function MasonryGrid({
   games,
-  activeCategory,
+  showFlag,
   onSelect,
 }: {
-  games: (GameItem & { categoryId: string; categoryLabel: string })[];
-  activeCategory: string;
-  onSelect: (
-    g: GameItem & { categoryId: string; categoryLabel: string }
-  ) => void;
+  games: GameWithCat[];
+  showFlag: boolean;
+  onSelect: (g: GameWithCat) => void;
 }) {
   const colCount = useColumnCount();
 
   const columns = useMemo(() => {
-    const cols: (typeof games)[] = Array.from({ length: colCount }, () => []);
+    const cols: GameWithCat[][] = Array.from({ length: colCount }, () => []);
     games.forEach((g, i) => cols[i % colCount].push(g));
     return cols;
   }, [games, colCount]);
 
   return (
-    <div className="flex gap-4">
+    <div className="flex gap-3 sm:gap-4">
       {columns.map((col, colIdx) => (
-        <div key={colIdx} className="flex-1 flex flex-col gap-4 min-w-0">
+        <div key={colIdx} className="flex-1 flex flex-col gap-3 sm:gap-4 min-w-0">
           {col.map((g, i) => {
             const globalIdx = i * colCount + colIdx;
             const aspect = ASPECT_RATIOS[globalIdx % ASPECT_RATIOS.length];
@@ -413,7 +429,7 @@ function MasonryGrid({
                 key={g.id}
                 game={g}
                 aspect={aspect}
-                activeCategory={activeCategory}
+                showFlag={showFlag}
                 onSelect={onSelect}
               />
             );
@@ -434,6 +450,12 @@ export function ProfileView({
   isOwner: boolean;
 }) {
   const searchParams = useSearchParams();
+
+  const counts = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const cat of profile.categories) map[cat.id] = cat.games.length;
+    return map;
+  }, [profile.categories]);
 
   const validCategories = useMemo(
     () => new Set(["all", ...profile.categories.map((c) => c.id)]),
@@ -488,9 +510,7 @@ export function ProfileView({
     [activeCategory, syncUrl]
   );
 
-  const [selectedGame, setSelectedGame] = useState<
-    (GameItem & { categoryId: string; categoryLabel: string }) | null
-  >(null);
+  const [selectedGame, setSelectedGame] = useState<GameWithCat | null>(null);
 
   const filteredGames = useMemo(() => {
     if (activeCategory === "all") {
@@ -517,7 +537,9 @@ export function ProfileView({
       })) ?? [];
     if (activeCategory === "want-to-play" && releaseFilter !== "all") {
       games = games.filter((g) =>
-        releaseFilter === "released" ? isReleased(g.releaseDate) : !isReleased(g.releaseDate)
+        releaseFilter === "released"
+          ? isReleased(g.releaseDate)
+          : !isReleased(g.releaseDate)
       );
     }
     return games;
@@ -529,9 +551,9 @@ export function ProfileView({
 
   return (
     <>
-      <BentoHeader profile={profile} />
+      <ProfileHeader profile={profile} counts={counts} />
 
-      <div className="flex flex-wrap gap-2 mb-8">
+      <div className="flex flex-wrap gap-2 mb-6">
         <button
           onClick={() => setActiveCategory("all")}
           className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
@@ -566,7 +588,7 @@ export function ProfileView({
       </div>
 
       {activeCategory === "want-to-play" && wantToPlay && (
-        <div className="flex flex-wrap gap-2 mb-8 -mt-4">
+        <div className="flex flex-wrap gap-2 mb-6 -mt-2">
           {(
             [
               { id: "all", label: "All", count: wantToPlay.games.length },
@@ -604,7 +626,7 @@ export function ProfileView({
       ) : (
         <MasonryGrid
           games={filteredGames}
-          activeCategory={activeCategory}
+          showFlag={activeCategory === "all"}
           onSelect={setSelectedGame}
         />
       )}

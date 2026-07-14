@@ -45,20 +45,27 @@ export default async function ExplorePage() {
       .limit(12),
   ]);
 
+  const visibleUsers = usersWithGames.filter((u) => u.username);
+
   return (
     <div className="min-h-screen bg-[#09090d] text-white">
       <PublicNav />
 
-      <div className="mx-auto max-w-6xl px-6 py-10 space-y-12">
+      <div className="mx-auto max-w-6xl px-6 py-8 space-y-8">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold">Explore</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Explore</h1>
           <p className="text-white/40 text-sm mt-1">
             Popular games and user catalogs.
           </p>
         </div>
 
         <section>
-          <h2 className="text-lg font-semibold mb-4">Popular Games</h2>
+          <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">
+            Popular Games
+            {popularGames.length > 0 && (
+              <span className="text-white/30 ml-2">({popularGames.length})</span>
+            )}
+          </h2>
           {popularGames.length === 0 ? (
             <div className="bg-white/3 rounded-2xl border border-white/8 p-12 text-center">
               <p className="text-white/30 text-sm">
@@ -66,7 +73,7 @@ export default async function ExplorePage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {popularGames.map((g) => (
                 <GameCard
                   key={g.gameId}
@@ -82,8 +89,13 @@ export default async function ExplorePage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-4">Users</h2>
-          {usersWithGames.length === 0 ? (
+          <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">
+            Users
+            {visibleUsers.length > 0 && (
+              <span className="text-white/30 ml-2">({visibleUsers.length})</span>
+            )}
+          </h2>
+          {visibleUsers.length === 0 ? (
             <div className="bg-white/3 rounded-2xl border border-white/8 p-12 text-center">
               <p className="text-white/30 text-sm">
                 No users with game catalogs yet.
@@ -91,34 +103,32 @@ export default async function ExplorePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {usersWithGames
-                .filter((u) => u.username)
-                .map((u) => (
-                  <Link
-                    key={u.username}
-                    href={`/u/${u.username}`}
-                    className="bg-white/3 rounded-2xl border border-white/8 p-5 flex items-center gap-4 hover:bg-white/5 transition-colors"
-                  >
-                    <Avatar name={u.name} image={u.image} size="md" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate">{u.name}</p>
-                      {u.username && (
-                        <p className="text-xs text-white/30">@{u.username}</p>
-                      )}
-                      {u.bio && (
-                        <p className="text-xs text-white/40 mt-0.5 line-clamp-1">
-                          {u.bio}
-                        </p>
-                      )}
+              {visibleUsers.map((u) => (
+                <Link
+                  key={u.username}
+                  href={`/u/${u.username}`}
+                  className="bg-white/3 rounded-2xl border border-white/8 p-5 flex items-center gap-4 hover:bg-white/5 transition-colors"
+                >
+                  <Avatar name={u.name} image={u.image} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{u.name}</p>
+                    {u.username && (
+                      <p className="text-xs text-white/30">@{u.username}</p>
+                    )}
+                    {u.bio && (
+                      <p className="text-xs text-white/40 mt-0.5 line-clamp-1">
+                        {u.bio}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right flex-none">
+                    <div className="text-sm font-bold text-primary">
+                      {u.gameCount}
                     </div>
-                    <div className="text-right flex-none">
-                      <div className="text-sm font-bold text-primary">
-                        {u.gameCount}
-                      </div>
-                      <div className="text-[10px] text-white/30">games</div>
-                    </div>
-                  </Link>
-                ))}
+                    <div className="text-[10px] text-white/30">games</div>
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
         </section>

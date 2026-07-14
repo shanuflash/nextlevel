@@ -11,6 +11,14 @@ interface DashboardStatsProps {
   popularGames: PopularGame[];
 }
 
+const DOT_CLASS: Record<string, string> = {
+  finished: "bg-emerald-400",
+  playing: "bg-blue-400",
+  "want-to-play": "bg-amber-400",
+  "on-hold": "bg-orange-400",
+  dropped: "bg-red-400",
+};
+
 export function DashboardStats({
   totalGames,
   categoryMap,
@@ -23,26 +31,27 @@ export function DashboardStats({
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-      <div className="relative bg-white/3 rounded-2xl border border-white/8 p-5 overflow-hidden">
-        <div className="text-3xl font-bold tabular-nums text-primary">
+    <div className="flex flex-col sm:flex-row overflow-hidden rounded-2xl border border-white/8 bg-white/3">
+      <div className="flex-1 px-5 py-4 border-b sm:border-b-0 sm:border-r border-white/8">
+        <div className="text-2xl font-bold tabular-nums leading-none text-primary">
           {totalGames}
         </div>
-        <div className="text-xs text-white/40 mt-1">Total Games</div>
-        <div className="absolute inset-x-0 bottom-0 h-1 bg-linear-to-r from-primary to-primary/80" />
+        <div className="mt-2 text-[11px] uppercase tracking-wider text-white/40">
+          Total Games
+        </div>
       </div>
       {CATEGORIES.map((cat) => (
         <div
           key={cat.id}
-          className="relative bg-white/3 rounded-2xl border border-white/8 p-5 overflow-hidden"
+          className="flex-1 px-5 py-4 border-b last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0 border-white/8"
         >
-          <div className={`text-3xl font-bold tabular-nums ${cat.color}`}>
+          <div className={`text-2xl font-bold tabular-nums leading-none ${cat.color}`}>
             {categoryMap[cat.id] || 0}
           </div>
-          <div className="text-xs text-white/40 mt-1">{cat.label}</div>
-          <div
-            className={`absolute inset-x-0 bottom-0 h-1 bg-linear-to-r ${cat.gradient}`}
-          />
+          <div className="mt-2 text-[11px] text-white/40 flex items-center gap-1.5">
+            <span className={`size-2 rounded-full ${DOT_CLASS[cat.id]}`} />
+            {cat.label}
+          </div>
         </div>
       ))}
     </div>

@@ -16,14 +16,13 @@ function generateId() {
 interface AddGameInput {
   igdbId: number;
   category: string;
-  rating?: number;
 }
 
 export async function addGame(input: AddGameInput): Promise<UserGameRow> {
   const session = await getSession();
   if (!session) throw new Error("Not authenticated");
 
-  const { igdbId, category, rating } = input;
+  const { igdbId, category } = input;
 
   let existingGame = await db.query.game.findFirst({
     where: eq(game.igdbId, igdbId),
@@ -80,7 +79,6 @@ export async function addGame(input: AddGameInput): Promise<UserGameRow> {
     gameId: existingGame!.id,
     igdbId,
     category: category as GameCategory,
-    rating: rating ?? null,
     startedAt: category === "playing" ? now : null,
     finishedAt: category === "finished" ? now : null,
   });
@@ -91,7 +89,6 @@ export async function addGame(input: AddGameInput): Promise<UserGameRow> {
   return {
     id: userGameId,
     category,
-    rating: rating ?? null,
     gameId: existingGame!.id,
     igdbId,
     title: existingGame!.title,
@@ -103,7 +100,7 @@ export async function addGame(input: AddGameInput): Promise<UserGameRow> {
 }
 
 // Set (add or change) a game's category from the public game page, keyed by
-// igdbId. Preserves an existing rating; updates start/finish timestamps.
+// igdbId. Updates start/finish timestamps.
 export async function setGameStatus(input: {
   igdbId: number;
   category: string;
@@ -183,7 +180,6 @@ export async function removeGameStatus(igdbId: number): Promise<void> {
 interface BulkAddItem {
   igdbId: number;
   category: string;
-  rating?: number;
 }
 
 export async function bulkAddGames(items: BulkAddItem[]) {
@@ -288,7 +284,6 @@ export async function bulkAddGames(items: BulkAddItem[]) {
           gameId: dbGame.id,
           igdbId: item.igdbId,
           category: item.category as GameCategory,
-          rating: item.rating ?? null,
           startedAt: item.category === "playing" ? now : null,
           finishedAt: item.category === "finished" ? now : null,
         });
@@ -299,7 +294,6 @@ export async function bulkAddGames(items: BulkAddItem[]) {
           row: {
             id: userGameId,
             category: item.category,
-            rating: item.rating ?? null,
             gameId: dbGame.id,
             igdbId: item.igdbId,
             title: dbGame.title,
@@ -331,7 +325,6 @@ export async function updateGame(formData: FormData) {
 
   const userGameId = formData.get("userGameId") as string;
   const category = formData.get("category") as string;
-  const rating = formData.get("rating") as string;
 
   if (!userGameId) throw new Error("Missing game ID");
 
@@ -360,7 +353,6 @@ export async function updateGame(formData: FormData) {
     .update(userGame)
     .set({
       category: category as GameCategory,
-      rating: rating ? parseFloat(rating) : null,
       ...timestamps,
     })
     .where(

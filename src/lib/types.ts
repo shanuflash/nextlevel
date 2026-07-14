@@ -8,7 +8,6 @@ export interface PopularGame {
 export interface UserGameRow {
   id: string;
   category: string;
-  rating: number | null;
   gameId: string;
   igdbId: number;
   title: string;

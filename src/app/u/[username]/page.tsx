@@ -77,7 +77,6 @@ export default async function ProfilePage({
     .select({
       id: userGame.id,
       category: userGame.category,
-      rating: userGame.rating,
       igdbId: game.igdbId,
       title: game.title,
       slug: game.slug,
@@ -129,7 +128,7 @@ export default async function ProfilePage({
     <div className="min-h-screen bg-[#09090d] text-white flex flex-col">
       <PublicNav />
 
-      <div className="mx-auto max-w-6xl px-6 py-10 w-full flex-1">
+      <div className="mx-auto max-w-6xl px-6 py-8 w-full flex-1">
         <Suspense>
           <ProfileView profile={profileData} isOwner={isOwner} />
         </Suspense>

@@ -17,7 +17,6 @@ export default async function GamesPage() {
     .select({
       id: userGame.id,
       category: userGame.category,
-      rating: userGame.rating,
       gameId: game.id,
       igdbId: game.igdbId,
       title: game.title,
