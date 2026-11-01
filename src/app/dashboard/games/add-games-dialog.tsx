@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { bulkAddGames } from "./actions";
-import { igdbCover, type IGDBSearchResult } from "@/src/lib/igdb";
+import { igdbCover } from "@/src/lib/igdb";
+import { useGameSearch, describeResult } from "@/src/lib/use-game-search";
 import { CATEGORIES } from "@/src/lib/constants";
 import {
   CategoryMenu,
@@ -20,22 +21,7 @@ interface QueuedGame {
   category: string;
 }
 
-function resultMeta(r: IGDBSearchResult): string {
-  const kind = r.kind
-    ? r.parentTitle
-      ? `${r.kind} of ${r.parentTitle}`
-      : r.kind
-    : null;
-  const platforms =
-    r.platforms.length > 3
-      ? `${r.platforms.slice(0, 3).join(", ")} +${r.platforms.length - 3}`
-      : r.platforms.join(", ");
-  return [r.releaseDate?.slice(0, 4), kind, platforms]
-    .filter(Boolean)
-    .join(" · ");
-}
-
-function ResultSkeleton() {
+export function ResultSkeleton() {
   return (
     <div className="space-y-1" aria-hidden>
       {Array.from({ length: 6 }, (_, i) => (
@@ -65,18 +51,14 @@ export function AddGamesDialog({
   existingIgdbIds: Set<number>;
   onAdded: (rows: UserGameRow[]) => void;
 }) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<IGDBSearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchedFor, setSearchedFor] = useState<string | null>(null);
+  const { query, setQuery, results, isSearching, searchedFor } =
+    useGameSearch();
   const [queue, setQueue] = useState<QueuedGame[]>([]);
   const [menu, setMenu] = useState<{
     anchor: MenuAnchor;
     game: { igdbId: number; title: string; coverImageId: string | null };
   } | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const abortRef = useRef<AbortController>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -91,46 +73,6 @@ export function AddGamesDialog({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [menu, onClose]);
-
-  const search = useCallback(async (q: string) => {
-    const trimmed = q.trim();
-    if (!/^\d+$/.test(trimmed) && trimmed.length < 2) {
-      abortRef.current?.abort();
-      setIsSearching(false);
-      setResults([]);
-      setSearchedFor(null);
-      return;
-    }
-
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    setIsSearching(true);
-    try {
-      const res = await fetch(`/api/igdb?q=${encodeURIComponent(trimmed)}`, {
-        signal: controller.signal,
-      });
-      const data = await res.json();
-      setResults(Array.isArray(data) ? data : []);
-      setSearchedFor(trimmed);
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") return;
-      setResults([]);
-      setSearchedFor(trimmed);
-    } finally {
-      if (!controller.signal.aborted) setIsSearching(false);
-    }
-  }, []);
-
-  function handleQueryChange(value: string) {
-    setQuery(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    // Show the loading state during the debounce too, not just the fetch.
-    const trimmed = value.trim();
-    if (/^\d+$/.test(trimmed) || trimmed.length >= 2) setIsSearching(true);
-    debounceRef.current = setTimeout(() => search(value), 300);
-  }
 
   function queueGame(
     game: { igdbId: number; title: string; coverImageId: string | null },
@@ -223,7 +165,7 @@ export function AddGamesDialog({
             <input
               ref={inputRef}
               value={query}
-              onChange={(e) => handleQueryChange(e.target.value)}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Search games by name"
               aria-label="Search games"
               className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary/50 placeholder:text-white/25"
@@ -280,7 +222,7 @@ export function AddGamesDialog({
                           {r.title}
                         </p>
                         <p className="text-[11px] text-white/35 truncate">
-                          {resultMeta(r)}
+                          {describeResult(r)}
                         </p>
                       </div>
                       {inLibrary ? (

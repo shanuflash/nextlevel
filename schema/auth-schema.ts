@@ -25,6 +25,9 @@ export const user = sqliteTable(
     banned: integer("banned", { mode: "boolean" }).default(false),
     banReason: text("ban_reason"),
     banExpires: integer("ban_expires", { mode: "timestamp_ms" }),
+    isPrivate: integer("is_private", { mode: "boolean" })
+      .default(false)
+      .notNull(),
   },
   (table) => [index("user_username_idx").on(table.username)],
 );

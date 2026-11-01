@@ -137,19 +137,44 @@ async function igdbFetch(
   return res.json();
 }
 
-export async function GET(req: NextRequest) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+// Search is public (Explore, nav search), so keep anonymous callers from
+// burning the IGDB quota. Best-effort and per instance; cache hits are free.
+const ANON_LIMIT = 30;
+const ANON_WINDOW_MS = 60_000;
+const anonHits = new Map<string, { count: number; resetAt: number }>();
 
-  const query = req.nextUrl.searchParams.get("q")?.trim();
+function anonAllowed(ip: string): boolean {
+  const now = Date.now();
+  const entry = anonHits.get(ip);
+  if (!entry || entry.resetAt < now) {
+    if (anonHits.size > 5_000) anonHits.clear();
+    anonHits.set(ip, { count: 1, resetAt: now + ANON_WINDOW_MS });
+    return true;
+  }
+  entry.count += 1;
+  return entry.count <= ANON_LIMIT;
+}
+
+export async function GET(req: NextRequest) {
+  const query = req.nextUrl.searchParams.get("q")?.trim().slice(0, 100);
   if (!query) return NextResponse.json([]);
 
   const cacheKey = query.toLowerCase();
   const cached = searchCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return NextResponse.json(cached.data);
+  }
+
+  const session = await getSession();
+  if (!session) {
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+    if (!anonAllowed(ip)) {
+      return NextResponse.json(
+        { error: "Too many searches, try again in a minute" },
+        { status: 429 }
+      );
+    }
   }
 
   try {
@@ -187,6 +212,7 @@ export async function GET(req: NextRequest) {
 
     const results = [...idGames, ...pool].slice(0, RESULT_LIMIT).map(mapResult);
 
+    if (searchCache.size > 1_000) searchCache.clear();
     searchCache.set(cacheKey, {
       data: results,
       expiresAt: Date.now() + CACHE_TTL_MS,

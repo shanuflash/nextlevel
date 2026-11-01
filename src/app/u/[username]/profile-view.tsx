@@ -1,13 +1,22 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
-import { igdbCover } from "@/src/lib/igdb";
+import Link from "next/link";
 import { Avatar } from "@/src/components/avatar";
+import { CoverImage } from "@/src/components/cover-image";
 import { CATEGORIES, CATEGORY_TAB_COLORS } from "@/src/lib/constants";
-import { updateGame, removeGame } from "@/src/app/dashboard/games/actions";
+import {
+  updateGame,
+  removeGame,
+  setGameStatus,
+} from "@/src/app/dashboard/games/actions";
 import { GameStatusDialog } from "@/src/components/game-status-dialog";
+import {
+  CategoryMenu,
+  anchorBelow,
+  type MenuAnchor,
+} from "@/src/components/category-menu";
 import { removeWithUndo } from "@/src/lib/remove-with-undo";
 import { toast } from "sonner";
 
@@ -20,6 +29,7 @@ interface GameItem {
   coverImageId: string | null;
   genre: string | null;
   releaseDate: string | null;
+  updatedAt: Date;
 }
 
 interface Category {
@@ -42,50 +52,98 @@ interface ProfileData {
 
 type GameWithCat = GameItem & { categoryId: string; categoryLabel: string };
 
+type SortBy = "updated" | "title" | "release";
+const SORTS: { id: SortBy; label: string }[] = [
+  { id: "updated", label: "Recently updated" },
+  { id: "title", label: "Title A–Z" },
+  { id: "release", label: "Release date" },
+];
+
+// Cards render in pages so a 500-game catalog doesn't mount 500 images.
+const PAGE_SIZE = 36;
+
 function isReleased(releaseDate: string | null): boolean {
   if (!releaseDate) return false;
   return releaseDate <= new Date().toISOString().split("T")[0];
 }
 
-// Cycling aspect ratios give the masonry grid its varied-height rhythm.
-const ASPECT_RATIOS = [
-  "aspect-[3/4]",
-  "aspect-[2/3]",
-  "aspect-[3/4]",
-  "aspect-[4/5]",
-  "aspect-[2/3]",
-  "aspect-[3/4]",
-  "aspect-[3/5]",
-  "aspect-[3/4]",
-];
+function toTime(d: Date | string) {
+  return d instanceof Date ? d.getTime() : new Date(d).getTime();
+}
 
-// Small category flag shown on each cover — the color dot + label carry the
-// tracking state now that there are no rating badges.
+// Small category flag shown on each cover in the "All" view.
 function CategoryFlag({ categoryId }: { categoryId: string }) {
   const cat = CATEGORIES.find((c) => c.id === categoryId);
   if (!cat) return null;
   return (
-    <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm px-2 py-1 text-[10px] font-semibold text-white/90">
-      <span className={`size-2 rounded-full ${cat.bar}`} />
-      {cat.label}
+    <div className="absolute top-2 left-2 z-10 flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-full bg-black/55 backdrop-blur-sm px-2 py-1 text-[10px] font-semibold text-white/90">
+      <span className={`size-2 flex-none rounded-full ${cat.bar}`} />
+      <span className="truncate">{cat.label}</span>
     </div>
   );
 }
 
-/* ─── Identity + Stats (bento) ─── */
+/* ─── Identity + stats ─── */
+
+function ShareButton({ username }: { username: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function share() {
+    const url = `${window.location.origin}/u/${username}`;
+    // Native share sheet on phones; clipboard everywhere else.
+    if (navigator.share && window.matchMedia("(pointer: coarse)").matches) {
+      try {
+        await navigator.share({ title: `@${username} on NextLevel`, url });
+        return;
+      } catch {
+        /* dismissed — fall through to copy */
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Couldn't copy the link");
+    }
+  }
+
+  return (
+    <button
+      onClick={share}
+      className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-4 text-xs font-medium text-white/70 transition-colors hover:bg-white/8 hover:text-white"
+    >
+      {copied ? "Link copied" : "Share profile"}
+    </button>
+  );
+}
 
 function ProfileHeader({
   profile,
   counts,
+  isOwner,
 }: {
   profile: ProfileData;
   counts: Record<string, number>;
+  isOwner: boolean;
 }) {
+  const stats = [
+    {
+      label: "Games",
+      value: profile.totalGames,
+      className: "text-primary",
+    },
+    ...CATEGORIES.filter((c) => c.id !== "dropped").map((c) => ({
+      label: c.label,
+      value: counts[c.id] || 0,
+      className: c.color,
+    })),
+  ];
+
   return (
-    <div className="mb-6 space-y-4">
-      {/* Identity + headline stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
-        <div className="col-span-2 flex items-center gap-4 sm:gap-5 rounded-2xl sm:rounded-3xl border border-white/8 bg-white/3 p-4 sm:p-6">
+    <div className="mb-6 space-y-3">
+      <div className="flex flex-col gap-4 rounded-2xl sm:rounded-3xl border border-white/8 bg-white/3 p-4 sm:flex-row sm:items-center sm:p-6">
+        <div className="flex min-w-0 flex-1 items-center gap-4 sm:gap-5">
           <Avatar
             name={profile.displayName}
             image={profile.avatarUrl}
@@ -96,106 +154,85 @@ function ProfileHeader({
             <h1 className="text-xl sm:text-2xl font-bold truncate">
               {profile.displayName}
             </h1>
-            <p className="text-white/40 text-sm">@{profile.username}</p>
+            <p className="text-white/40 text-sm">
+              @{profile.username}
+              <span className="text-white/20">
+                {" "}
+                · Joined {profile.joinedDate}
+              </span>
+            </p>
             {profile.bio && (
-              <p className="text-white/55 mt-2 text-sm line-clamp-2 max-w-sm">
+              <p className="text-white/55 mt-2 text-sm line-clamp-2 max-w-md">
                 {profile.bio}
               </p>
             )}
           </div>
         </div>
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-white/8 bg-white/3 p-4 sm:p-6 flex flex-col justify-center">
-          <div className="text-3xl font-bold tabular-nums text-primary leading-none">
-            {profile.totalGames}
-          </div>
-          <div className="text-xs text-white/40 mt-2">Total Games</div>
-          <div className="absolute inset-x-0 bottom-0 h-0.75 bg-primary" />
-        </div>
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-white/8 bg-white/3 p-4 sm:p-6 flex flex-col justify-center">
-          <div className="text-3xl font-bold tabular-nums text-emerald-400 leading-none">
-            {profile.finishedCount}
-          </div>
-          <div className="text-xs text-white/40 mt-2">Finished</div>
-          <div className="absolute inset-x-0 bottom-0 h-0.75 bg-emerald-500" />
+        <div className="flex gap-2 sm:flex-none">
+          <ShareButton username={profile.username} />
+          {isOwner && (
+            <Link
+              href="/dashboard/settings"
+              className="inline-flex min-h-10 items-center rounded-full border border-white/10 bg-white/5 px-4 text-xs font-medium text-white/70 transition-colors hover:bg-white/8 hover:text-white"
+            >
+              Edit profile
+            </Link>
+          )}
         </div>
       </div>
 
-      {/* Secondary category strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
-        <div className="rounded-2xl border border-white/8 bg-white/3 px-4 py-4">
-          <div className="text-xl sm:text-2xl font-bold tabular-nums text-blue-400">
-            {counts["playing"] || 0}
+      {/* One strip instead of six tiles: scrolls sideways on phones. */}
+      <div className="flex overflow-x-auto rounded-2xl border border-white/8 bg-white/3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className="flex-none border-r border-white/8 px-4 py-3 sm:flex-1 sm:px-5"
+          >
+            <div
+              className={`text-lg sm:text-xl font-bold tabular-nums leading-none ${s.className}`}
+            >
+              {s.value}
+            </div>
+            <div className="mt-1.5 whitespace-nowrap text-[11px] text-white/40">
+              {s.label}
+            </div>
           </div>
-          <div className="text-xs text-white/40 mt-1.5 flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-blue-400" />
-            Playing
-          </div>
-        </div>
-        <div className="rounded-2xl border border-white/8 bg-white/3 px-4 py-4">
-          <div className="text-xl sm:text-2xl font-bold tabular-nums text-amber-400">
-            {counts["want-to-play"] || 0}
-          </div>
-          <div className="text-xs text-white/40 mt-1.5 flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-amber-400" />
-            Want to Play
-          </div>
-        </div>
-        <div className="rounded-2xl border border-white/8 bg-white/3 px-4 py-4">
-          <div className="text-xl sm:text-2xl font-bold tabular-nums text-orange-400">
-            {counts["on-hold"] || 0}
-          </div>
-          <div className="text-xs text-white/40 mt-1.5 flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-orange-400" />
-            On Hold
-          </div>
-        </div>
-        <div className="rounded-2xl border border-white/8 bg-white/3 px-4 py-4">
-          <div className="text-xl sm:text-2xl font-bold text-white/80 truncate">
+        ))}
+        <div className="flex-none px-4 py-3 sm:flex-1 sm:px-5">
+          <div className="whitespace-nowrap text-sm font-semibold leading-tight text-white/80">
             {profile.favoriteGenre}
           </div>
-          <div className="text-xs text-white/40 mt-1.5">Top Genre</div>
+          <div className="mt-1.5 whitespace-nowrap text-[11px] text-white/40">
+            Top genre
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── Masonry Grid ─── */
+/* ─── Grid ─── */
 
 function GameCard({
   game,
-  aspect,
   showFlag,
   onSelect,
 }: {
   game: GameWithCat;
-  aspect: string;
   showFlag: boolean;
   onSelect: (g: GameWithCat) => void;
 }) {
-  const coverUrl = igdbCover(game.coverImageId);
   return (
     <button
       onClick={() => onSelect(game)}
+      aria-label={`${game.title}, ${game.categoryLabel}`}
       className="group relative text-left w-full"
     >
-      <div
-        className={`relative ${aspect} overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all duration-300 group-hover:ring-white/25 group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40`}
-      >
-        {coverUrl ? (
-          <Image
-            src={coverUrl}
-            alt={game.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 16vw"
-          />
-        ) : (
-          <div className="size-full bg-white/5" />
-        )}
+      <div className="relative aspect-3/4 overflow-hidden rounded-xl sm:rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all duration-300 group-hover:ring-white/25 sm:group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40">
+        <CoverImage imageId={game.coverImageId} />
         {showFlag && <CategoryFlag categoryId={game.categoryId} />}
-        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 via-black/30 to-transparent p-3 pt-10">
-          <p className="text-xs font-semibold leading-tight line-clamp-2">
+        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/85 via-black/35 to-transparent p-2 sm:p-3 pt-8 sm:pt-10">
+          <p className="text-[10px] sm:text-xs font-semibold leading-tight line-clamp-2">
             {game.title}
           </p>
         </div>
@@ -204,24 +241,7 @@ function GameCard({
   );
 }
 
-function useColumnCount() {
-  const [cols, setCols] = useState(3);
-  useEffect(() => {
-    function update() {
-      const w = window.innerWidth;
-      if (w >= 1024) setCols(6);
-      else if (w >= 768) setCols(5);
-      else if (w >= 640) setCols(4);
-      else setCols(2);
-    }
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-  return cols;
-}
-
-function MasonryGrid({
+function PagedGrid({
   games,
   showFlag,
   onSelect,
@@ -230,37 +250,107 @@ function MasonryGrid({
   showFlag: boolean;
   onSelect: (g: GameWithCat) => void;
 }) {
-  const colCount = useColumnCount();
+  const [visible, setVisible] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const hasMore = visible < games.length;
 
-  const columns = useMemo(() => {
-    const cols: GameWithCat[][] = Array.from({ length: colCount }, () => []);
-    games.forEach((g, i) => cols[i % colCount].push(g));
-    return cols;
-  }, [games, colCount]);
+  // Load the next page shortly before the user reaches the end.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) setVisible((v) => v + PAGE_SIZE);
+      },
+      { rootMargin: "600px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore]);
 
   return (
-    <div className="flex gap-2.5 sm:gap-4">
-      {columns.map((col, colIdx) => (
-        <div
-          key={colIdx}
-          className="flex-1 flex flex-col gap-2.5 sm:gap-4 min-w-0"
-        >
-          {col.map((g, i) => {
-            const globalIdx = i * colCount + colIdx;
-            const aspect = ASPECT_RATIOS[globalIdx % ASPECT_RATIOS.length];
-            return (
-              <GameCard
-                key={g.id}
-                game={g}
-                aspect={aspect}
-                showFlag={showFlag}
-                onSelect={onSelect}
-              />
-            );
-          })}
+    <>
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-4">
+        {games.slice(0, visible).map((g) => (
+          <GameCard
+            key={g.id}
+            game={g}
+            showFlag={showFlag}
+            onSelect={onSelect}
+          />
+        ))}
+      </div>
+      {hasMore && (
+        <div ref={sentinelRef} className="mt-6 flex justify-center">
+          <button
+            onClick={() => setVisible((v) => v + PAGE_SIZE)}
+            className="min-h-10 rounded-full border border-white/10 bg-white/5 px-5 text-xs font-medium text-white/60 hover:text-white"
+          >
+            Show more ({games.length - visible} left)
+          </button>
         </div>
-      ))}
-    </div>
+      )}
+    </>
+  );
+}
+
+/* ─── Visitor's own status, inside the game sheet ─── */
+
+function VisitorStatus({
+  game,
+  isLoggedIn,
+  category,
+  onChange,
+}: {
+  game: GameWithCat;
+  isLoggedIn: boolean;
+  category: string | undefined;
+  onChange: (igdbId: number, category: string) => void;
+}) {
+  const [anchor, setAnchor] = useState<MenuAnchor | null>(null);
+
+  if (!isLoggedIn) {
+    return (
+      <Link
+        href="/signup"
+        className="flex min-h-11 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+      >
+        Sign up to track this game
+      </Link>
+    );
+  }
+
+  const cat = CATEGORIES.find((c) => c.id === category);
+  return (
+    <>
+      <button
+        onClick={(e) => setAnchor(anchorBelow(e.currentTarget, "start"))}
+        aria-haspopup="menu"
+        className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border text-sm font-medium transition-colors ${
+          cat
+            ? `${cat.bg} ${cat.color}`
+            : "border-primary/25 bg-primary/10 text-primary hover:bg-primary/20"
+        }`}
+      >
+        {cat ? (
+          <>
+            <span className={`size-2 rounded-full ${cat.bar}`} aria-hidden />
+            In your library: {cat.label}
+          </>
+        ) : (
+          "+ Add to my library"
+        )}
+      </button>
+      {anchor && (
+        <CategoryMenu
+          anchor={anchor}
+          title="Your status"
+          value={category}
+          onSelect={(next) => onChange(game.igdbId, next)}
+          onClose={() => setAnchor(null)}
+        />
+      )}
+    </>
   );
 }
 
@@ -269,11 +359,17 @@ function MasonryGrid({
 export function ProfileView({
   profile,
   isOwner,
+  isLoggedIn,
+  viewerCategories,
 }: {
   profile: ProfileData;
   isOwner: boolean;
+  isLoggedIn: boolean;
+  /** Logged-in visitor's own statuses, keyed by igdbId. */
+  viewerCategories: Record<number, string>;
 }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const counts = useMemo(() => {
     const map: Record<string, number> = {};
@@ -298,44 +394,48 @@ export function ProfileView({
     return param === "released" || param === "unreleased" ? param : "all";
   });
 
-  const syncUrl = useCallback((category: string, release: string) => {
-    const params = new URLSearchParams(window.location.search);
-    if (category === "all") {
-      params.delete("category");
-    } else {
-      params.set("category", category);
-    }
-    if (category === "want-to-play" && release !== "all") {
-      params.set("released", release);
-    } else {
-      params.delete("released");
-    }
-    const query = params.toString();
-    window.history.replaceState(
-      null,
-      "",
-      query ? `?${query}` : window.location.pathname
-    );
-  }, []);
+  const [sortBy, setSortByState] = useState<SortBy>(() => {
+    const param = searchParams.get("sort") as SortBy | null;
+    return param && SORTS.some((s) => s.id === param) ? param : "updated";
+  });
 
-  const setActiveCategory = useCallback(
-    (category: string) => {
-      setActiveCategoryState(category);
-      syncUrl(category, releaseFilter);
+  const syncUrl = useCallback(
+    (category: string, release: string, sort: SortBy) => {
+      const params = new URLSearchParams(window.location.search);
+      if (category === "all") params.delete("category");
+      else params.set("category", category);
+      if (category === "want-to-play" && release !== "all") {
+        params.set("released", release);
+      } else {
+        params.delete("released");
+      }
+      if (sort === "updated") params.delete("sort");
+      else params.set("sort", sort);
+      const query = params.toString();
+      window.history.replaceState(
+        null,
+        "",
+        query ? `?${query}` : window.location.pathname
+      );
     },
-    [releaseFilter, syncUrl]
+    []
   );
 
-  const setReleaseFilter = useCallback(
-    (release: "all" | "released" | "unreleased") => {
-      setReleaseFilterState(release);
-      syncUrl(activeCategory, release);
-    },
-    [activeCategory, syncUrl]
-  );
+  const setActiveCategory = (category: string) => {
+    setActiveCategoryState(category);
+    syncUrl(category, releaseFilter, sortBy);
+  };
+  const setReleaseFilter = (release: "all" | "released" | "unreleased") => {
+    setReleaseFilterState(release);
+    syncUrl(activeCategory, release, sortBy);
+  };
+  const setSortBy = (sort: SortBy) => {
+    setSortByState(sort);
+    syncUrl(activeCategory, releaseFilter, sort);
+  };
 
   const [selectedGame, setSelectedGame] = useState<GameWithCat | null>(null);
-  const router = useRouter();
+  const [viewerStatus, setViewerStatus] = useState(viewerCategories);
 
   // Profile data comes from the server, so refresh it after each change.
   async function changeCategory(game: GameWithCat, category: string) {
@@ -362,29 +462,38 @@ export function ProfileView({
     });
   }
 
-  const filteredGames = useMemo(() => {
-    if (activeCategory === "all") {
-      return profile.categories
-        .flatMap((cat) =>
-          cat.games.map((g) => ({
-            ...g,
-            categoryId: cat.id,
-            categoryLabel: cat.label,
-          }))
-        )
-        .sort((a, b) => {
-          const aPlaying = a.categoryId === "playing" ? 0 : 1;
-          const bPlaying = b.categoryId === "playing" ? 0 : 1;
-          return aPlaying - bPlaying;
-        });
+  async function setVisitorStatus(igdbId: number, category: string) {
+    const prev = viewerStatus[igdbId];
+    setViewerStatus((m) => ({ ...m, [igdbId]: category }));
+    try {
+      await setGameStatus({ igdbId, category });
+      const label = CATEGORIES.find((c) => c.id === category)?.label;
+      toast.success(
+        prev ? `Moved to ${label} in your library` : `Added to your ${label}`
+      );
+    } catch (e) {
+      setViewerStatus((m) => {
+        const next = { ...m };
+        if (prev) next[igdbId] = prev;
+        else delete next[igdbId];
+        return next;
+      });
+      toast.error(e instanceof Error ? e.message : "Failed to add game");
     }
-    const cat = profile.categories.find((c) => c.id === activeCategory);
-    let games =
-      cat?.games.map((g) => ({
+  }
+
+  const filteredGames = useMemo(() => {
+    const scoped =
+      activeCategory === "all"
+        ? profile.categories
+        : profile.categories.filter((c) => c.id === activeCategory);
+    let games: GameWithCat[] = scoped.flatMap((cat) =>
+      cat.games.map((g) => ({
         ...g,
         categoryId: cat.id,
         categoryLabel: cat.label,
-      })) ?? [];
+      }))
+    );
     if (activeCategory === "want-to-play" && releaseFilter !== "all") {
       games = games.filter((g) =>
         releaseFilter === "released"
@@ -392,8 +501,14 @@ export function ProfileView({
           : !isReleased(g.releaseDate)
       );
     }
-    return games;
-  }, [activeCategory, releaseFilter, profile.categories]);
+    return games.sort((a, b) => {
+      if (sortBy === "title") return a.title.localeCompare(b.title);
+      if (sortBy === "release") {
+        return (b.releaseDate ?? "").localeCompare(a.releaseDate ?? "");
+      }
+      return toTime(b.updatedAt) - toTime(a.updatedAt);
+    });
+  }, [activeCategory, releaseFilter, sortBy, profile.categories]);
 
   const wantToPlay = profile.categories.find((c) => c.id === "want-to-play");
   const releasedCount =
@@ -401,40 +516,72 @@ export function ProfileView({
 
   return (
     <>
-      <ProfileHeader profile={profile} counts={counts} />
+      <ProfileHeader profile={profile} counts={counts} isOwner={isOwner} />
 
-      <div className="flex gap-2 mb-6 overflow-x-auto -mx-4 px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <button
-          onClick={() => setActiveCategory("all")}
-          className={`shrink-0 min-h-11 px-4 py-2 rounded-full text-sm font-medium border transition-all ${
-            activeCategory === "all"
-              ? "bg-white/12 text-white border-white/20"
-              : "bg-transparent text-white/40 border-white/8 hover:text-white/60 hover:border-white/15"
-          }`}
-        >
-          All
-          <span className="ml-2 text-xs opacity-60">{profile.totalGames}</span>
-        </button>
-        {profile.categories.map((cat) => {
-          const isActive = cat.id === activeCategory;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={`shrink-0 min-h-11 px-4 py-2 rounded-full text-sm font-medium border transition-all ${
-                isActive
-                  ? (CATEGORY_TAB_COLORS[cat.id] ??
-                    "bg-white/15 text-white border-white/20")
-                  : "bg-transparent text-white/40 border-white/8 hover:text-white/60 hover:border-white/15"
-              }`}
-            >
-              {cat.label}
-              <span className="ml-2 text-xs opacity-60">
-                {cat.games.length}
-              </span>
-            </button>
-          );
-        })}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-1 gap-2 overflow-x-auto -mx-4 px-4 pb-1 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <button
+            onClick={() => setActiveCategory("all")}
+            className={`shrink-0 min-h-11 px-4 py-2 rounded-full text-sm font-medium border transition-all ${
+              activeCategory === "all"
+                ? "bg-white/12 text-white border-white/20"
+                : "bg-transparent text-white/40 border-white/8 hover:text-white/60 hover:border-white/15"
+            }`}
+          >
+            All
+            <span className="ml-2 text-xs opacity-60">
+              {profile.totalGames}
+            </span>
+          </button>
+          {profile.categories.map((cat) => {
+            const isActive = cat.id === activeCategory;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`shrink-0 min-h-11 px-4 py-2 rounded-full text-sm font-medium border transition-all ${
+                  isActive
+                    ? (CATEGORY_TAB_COLORS[cat.id] ??
+                      "bg-white/15 text-white border-white/20")
+                    : "bg-transparent text-white/40 border-white/8 hover:text-white/60 hover:border-white/15"
+                }`}
+              >
+                {cat.label}
+                <span className="ml-2 text-xs opacity-60">
+                  {cat.games.length}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <label className="relative sm:w-48 sm:flex-none">
+          <span className="sr-only">Sort games</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortBy)}
+            className="h-11 w-full appearance-none rounded-xl border border-white/10 bg-white/5 pl-3 pr-8 text-xs font-medium text-white/70 focus:border-primary/40 focus:outline-none"
+          >
+            {SORTS.map((s) => (
+              <option key={s.id} value={s.id}>
+                Sort: {s.label}
+              </option>
+            ))}
+          </select>
+          <svg
+            aria-hidden
+            className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-white/35"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="m7 10 5 5 5-5"
+            />
+          </svg>
+        </label>
       </div>
 
       {activeCategory === "want-to-play" && wantToPlay && (
@@ -474,7 +621,9 @@ export function ProfileView({
           <p className="text-white/40 text-sm">No games in this catalog yet.</p>
         </div>
       ) : (
-        <MasonryGrid
+        <PagedGrid
+          // Remount on filter/sort change so paging restarts at the top.
+          key={`${activeCategory}-${releaseFilter}-${sortBy}`}
           games={filteredGames}
           showFlag={activeCategory === "all"}
           onSelect={setSelectedGame}
@@ -491,7 +640,16 @@ export function ProfileView({
               : undefined
           }
           onRemove={isOwner ? () => remove(selectedGame) : undefined}
-        />
+        >
+          {!isOwner && (
+            <VisitorStatus
+              game={selectedGame}
+              isLoggedIn={isLoggedIn}
+              category={viewerStatus[selectedGame.igdbId]}
+              onChange={setVisitorStatus}
+            />
+          )}
+        </GameStatusDialog>
       )}
     </>
   );

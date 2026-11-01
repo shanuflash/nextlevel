@@ -23,6 +23,8 @@ export default async function GamesPage() {
       slug: game.slug,
       coverImageId: game.coverImageId,
       genre: game.genres,
+      platforms: game.platforms,
+      releaseDate: game.releaseDate,
       updatedAt: userGame.updatedAt,
     })
     .from(userGame)

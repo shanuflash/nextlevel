@@ -4,11 +4,11 @@ import { user } from "@/schema/auth-schema";
 import { userGame, game } from "@/schema/game-schema";
 import { desc, count, eq, inArray } from "drizzle-orm";
 import Link from "next/link";
-import Image from "next/image";
 import { Avatar } from "@/src/components/avatar";
 import { GameCard } from "@/src/components/game-card";
-import { igdbCover } from "@/src/lib/igdb";
 import { PublicNav } from "@/src/components/public-nav";
+import { SearchTrigger } from "@/src/components/game-search";
+import { CoverImage } from "@/src/components/cover-image";
 
 export const metadata: Metadata = {
   title: "Explore",
@@ -31,6 +31,7 @@ export default async function ExplorePage() {
       })
       .from(user)
       .innerJoin(userGame, eq(user.id, userGame.userId))
+      .where(eq(user.isPrivate, false))
       .groupBy(user.id)
       .orderBy(desc(count(userGame.id)))
       .limit(8),
@@ -113,6 +114,9 @@ export default async function ExplorePage() {
           <p className="text-white/40 text-sm mt-1">
             Find your next game through gamers worth following.
           </p>
+          <div className="mt-5 max-w-xl">
+            <SearchTrigger variant="bar" label="Search any game by name" />
+          </div>
         </div>
 
         {/* Tastemakers */}
@@ -164,23 +168,16 @@ export default async function ExplorePage() {
                     {covers.length > 0 && (
                       <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 px-3.5 pb-3.5 [&>*:nth-child(n+5)]:hidden sm:[&>*:nth-child(n+5)]:block">
                         {covers.map((c, i) => {
-                          const url = igdbCover(c, "t_cover_big");
                           return (
                             <div
                               key={i}
                               className="relative aspect-3/4 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/8"
                             >
-                              {url ? (
-                                <Image
-                                  src={url}
-                                  alt=""
-                                  fill
-                                  className="object-cover"
-                                  sizes="70px"
-                                />
-                              ) : (
-                                <div className="size-full bg-white/5" />
-                              )}
+                              <CoverImage
+                                imageId={c}
+                                size="t_cover_small"
+                                placeholderSize="t_thumb"
+                              />
                             </div>
                           );
                         })}
@@ -210,7 +207,6 @@ export default async function ExplorePage() {
                   title={g.title}
                   coverImageId={g.coverImageId}
                   subtitle={g.genres?.split(", ")[0]}
-                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
                 />
               ))}
             </div>

@@ -102,6 +102,8 @@ export async function addGame(input: AddGameInput): Promise<UserGameRow> {
     slug: existingGame!.slug,
     coverImageId: existingGame!.coverImageId,
     genre: existingGame!.genres,
+    platforms: existingGame!.platforms,
+    releaseDate: existingGame!.releaseDate,
     updatedAt: now,
   };
 }
@@ -314,6 +316,8 @@ export async function bulkAddGames(items: BulkAddItem[]) {
             slug: dbGame.slug,
             coverImageId: dbGame.coverImageId,
             genre: dbGame.genres,
+            platforms: dbGame.platforms,
+            releaseDate: dbGame.releaseDate,
             updatedAt: now,
           },
         });

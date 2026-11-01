@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { igdbCover } from "@/src/lib/igdb";
+import { igdbImage } from "@/src/lib/igdb";
 import { CATEGORIES } from "@/src/lib/constants";
+import { CoverImage } from "@/src/components/cover-image";
+import { getGameBackdrop } from "@/src/lib/game-backdrop";
 
 /**
  * Game detail sheet for a catalog entry. Owners change status with a single
@@ -15,6 +17,7 @@ export function GameStatusDialog({
   onClose,
   onChangeCategory,
   onRemove,
+  children,
 }: {
   game: {
     title: string;
@@ -27,10 +30,24 @@ export function GameStatusDialog({
   /** Omit for read-only (visitor) view. */
   onChangeCategory?: (category: string) => void;
   onRemove?: () => void;
+  /** Extra actions, e.g. a visitor's own "Add to my library". */
+  children?: React.ReactNode;
 }) {
-  const coverUrl = igdbCover(game.coverImageId, "t_cover_big");
+  // undefined = still looking, null = game has no artwork or screenshots.
+  const [backdrop, setBackdrop] = useState<string | null | undefined>();
+  const blurredCover = igdbImage(game.coverImageId, "t_cover_small");
   const current = CATEGORIES.find((c) => c.id === game.category);
   const canEdit = Boolean(onChangeCategory);
+
+  useEffect(() => {
+    let cancelled = false;
+    getGameBackdrop(game.igdbId)
+      .then((id) => !cancelled && setBackdrop(id))
+      .catch(() => !cancelled && setBackdrop(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [game.igdbId]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -53,17 +70,31 @@ export function GameStatusDialog({
         aria-label={game.title}
         className="bg-surface-elevated border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[92dvh] overflow-y-auto"
       >
+        {/* Wide artwork when the game has some; otherwise the cover sits
+            uncropped on a blurred copy of itself instead of being stretched. */}
         <div className="relative aspect-video overflow-hidden bg-white/5">
-          {coverUrl ? (
+          {blurredCover && (
             <Image
-              src={coverUrl}
+              src={blurredCover}
               alt=""
               fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 448px"
+              className="object-cover scale-125 blur-2xl opacity-60"
+              sizes="10vw"
+            />
+          )}
+          {backdrop ? (
+            <CoverImage
+              imageId={backdrop}
+              size="t_screenshot_big"
+              placeholderSize="t_screenshot_med"
             />
           ) : (
-            <div className="size-full bg-white/5" />
+            backdrop === null &&
+            game.coverImageId && (
+              <div className="absolute inset-y-4 left-1/2 aspect-3/4 -translate-x-1/2 overflow-hidden rounded-xl shadow-2xl shadow-black/60">
+                <CoverImage imageId={game.coverImageId} />
+              </div>
+            )
           )}
           <div className="absolute inset-0 bg-linear-to-t from-surface-elevated via-transparent to-transparent" />
           <button
@@ -122,6 +153,8 @@ export function GameStatusDialog({
               </span>
             )
           )}
+
+          {children}
 
           <div className="flex gap-2 pt-1">
             <Link

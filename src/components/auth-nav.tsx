@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/src/lib/auth-client";
 import { Avatar } from "@/src/components/avatar";
+import { SearchTrigger } from "@/src/components/game-search";
 import { useEffect, useState } from "react";
 
 interface AuthNavUser {
@@ -145,6 +146,7 @@ export function AuthNav({ user }: { user: AuthNavUser }) {
 
           {/* Desktop right section */}
           <div className="hidden md:flex items-center gap-3">
+            <SearchTrigger variant="nav" />
             {user.username ? (
               <Link
                 href={`/u/${user.username}`}
@@ -181,6 +183,9 @@ export function AuthNav({ user }: { user: AuthNavUser }) {
 
           {/* Mobile profile access; primary navigation lives in the thumb dock. */}
           <div className="flex-1 md:hidden" />
+          <div className="md:hidden">
+            <SearchTrigger variant="icon" />
+          </div>
           <button
             onClick={() => setProfileOpen(!profileOpen)}
             className="md:hidden flex items-center justify-center size-11 -mr-1 rounded-full bg-white/5 ring-1 ring-white/10"

@@ -20,19 +20,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const playing = await db
-    .select({
-      title: game.title,
-      slug: game.slug,
-      coverImageId: game.coverImageId,
-    })
-    .from(userGame)
-    .innerJoin(game, eq(userGame.gameId, game.id))
-    .where(
-      and(eq(userGame.userId, dbUser.id), eq(userGame.category, "playing")),
-    )
-    .orderBy(desc(userGame.updatedAt))
-    .limit(3);
+  // Private profiles share nothing; same shape so consumers needn't special-case.
+  const playing = dbUser.isPrivate
+    ? []
+    : await db
+        .select({
+          title: game.title,
+          slug: game.slug,
+          coverImageId: game.coverImageId,
+        })
+        .from(userGame)
+        .innerJoin(game, eq(userGame.gameId, game.id))
+        .where(
+          and(eq(userGame.userId, dbUser.id), eq(userGame.category, "playing"))
+        )
+        .orderBy(desc(userGame.updatedAt))
+        .limit(3);
 
   return NextResponse.json(
     {
@@ -47,6 +50,6 @@ export async function GET(request: NextRequest) {
       headers: {
         "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
       },
-    },
+    }
   );
 }

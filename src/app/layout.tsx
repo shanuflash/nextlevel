@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/src/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/next";
 import { PortalWidget } from "shanu-portal-widget";
+import { SearchPaletteHost } from "@/src/components/game-search";
 
 // Space Grotesk is the single UI typeface — body AND display. Full weight
 // range so body copy (400/500) and headings (600/700) all use it.
@@ -44,6 +45,7 @@ export default function RootLayout({
     <html lang="en" className={spaceGrotesk.variable}>
       <body className={`${geistMono.variable} antialiased`}>
         {children}
+        <SearchPaletteHost />
         <PortalWidget />
         <Toaster />
         <Analytics />

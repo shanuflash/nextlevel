@@ -7,6 +7,7 @@ import { eq, desc, count } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { PublicNav } from "@/src/components/public-nav";
 import { ProfileView } from "./profile-view";
+import { PrivateProfile } from "./private-profile";
 import { getSession } from "@/src/lib/session";
 import { CATEGORIES } from "@/src/lib/constants";
 
@@ -22,6 +23,15 @@ export async function generateMetadata({
   });
 
   if (!dbUser) return { title: "User Not Found" };
+
+  // Private: generic metadata only — no name, bio, counts, or OG details.
+  if (dbUser.isPrivate) {
+    return {
+      title: "Private profile",
+      description: "This NextLevel profile is private.",
+      robots: { index: false, follow: false },
+    };
+  }
 
   const [gameCount] = await db
     .select({ count: count() })
@@ -72,22 +82,38 @@ export default async function ProfilePage({
 
   const session = await getSession();
   const isOwner = session?.user?.id === dbUser.id;
+  const isHidden = dbUser.isPrivate && !isOwner;
 
-  const userGames = await db
-    .select({
-      id: userGame.id,
-      category: userGame.category,
-      igdbId: game.igdbId,
-      title: game.title,
-      slug: game.slug,
-      coverImageId: game.coverImageId,
-      genre: game.genres,
-      releaseDate: game.releaseDate,
-    })
-    .from(userGame)
-    .innerJoin(game, eq(userGame.gameId, game.id))
-    .where(eq(userGame.userId, dbUser.id))
-    .orderBy(desc(game.popularity));
+  const userGames = isHidden
+    ? []
+    : await db
+        .select({
+          id: userGame.id,
+          category: userGame.category,
+          igdbId: game.igdbId,
+          title: game.title,
+          slug: game.slug,
+          coverImageId: game.coverImageId,
+          genre: game.genres,
+          releaseDate: game.releaseDate,
+          updatedAt: userGame.updatedAt,
+        })
+        .from(userGame)
+        .innerJoin(game, eq(userGame.gameId, game.id))
+        .where(eq(userGame.userId, dbUser.id))
+        .orderBy(desc(game.popularity));
+
+  // A logged-in visitor sees their own status for each game in the sheet.
+  const viewerCategories: Record<number, string> = {};
+  if (session && !isOwner && !isHidden) {
+    const viewerGames = await db
+      .select({ igdbId: userGame.igdbId, category: userGame.category })
+      .from(userGame)
+      .where(eq(userGame.userId, session.user.id));
+    for (const g of viewerGames) {
+      if (g.igdbId) viewerCategories[g.igdbId] = g.category;
+    }
+  }
 
   const categories = CATEGORIES.map((cat) => ({
     ...cat,
@@ -129,9 +155,18 @@ export default async function ProfilePage({
       <PublicNav />
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8 w-full flex-1">
-        <Suspense>
-          <ProfileView profile={profileData} isOwner={isOwner} />
-        </Suspense>
+        {isHidden ? (
+          <PrivateProfile username={profileData.username} />
+        ) : (
+          <Suspense>
+            <ProfileView
+              profile={profileData}
+              isOwner={isOwner}
+              isLoggedIn={Boolean(session)}
+              viewerCategories={viewerCategories}
+            />
+          </Suspense>
+        )}
       </div>
 
       <footer className="border-t border-white/6 mt-auto">

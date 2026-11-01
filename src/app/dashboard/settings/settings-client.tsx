@@ -1,14 +1,24 @@
 "use client";
 
-import { useState } from "react";
-import { updateProfile, setNewPassword as setPasswordAction } from "./actions";
+import { useEffect, useState } from "react";
+import {
+  updateProfile,
+  setNewPassword as setPasswordAction,
+  deleteAccount,
+} from "./actions";
 import { authClient } from "@/src/lib/auth-client";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { GoogleIcon, EyeIcon } from "@/src/components/icons";
 
 type Provider = "google" | "github";
 type SectionId = "profile" | "account" | "security";
+
+const SECTION_IDS: SectionId[] = ["profile", "account", "security"];
+
+function parseSection(value: string | null): SectionId {
+  return SECTION_IDS.find((id) => id === value) ?? "profile";
+}
 
 interface UserData {
   name: string;
@@ -16,6 +26,7 @@ interface UserData {
   bio: string;
   email: string;
   image?: string;
+  isPrivate: boolean;
   providers: string[];
   hasPassword: boolean;
 }
@@ -96,8 +107,18 @@ const SECTIONS: {
 ];
 
 export function SettingsClient({ user }: { user: UserData }) {
-  const [active, setActive] = useState<SectionId>("profile");
+  // The URL is the source of truth (?section=account), so sections are
+  // linkable. Next syncs useSearchParams with history.replaceState, which
+  // switches sections without a navigation or server round trip.
+  const searchParams = useSearchParams();
+  const active = parseSection(searchParams.get("section"));
   const current = SECTIONS.find((s) => s.id === active)!;
+
+  function selectSection(id: SectionId) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("section", id);
+    window.history.replaceState(null, "", `?${params.toString()}`);
+  }
 
   return (
     <div>
@@ -116,7 +137,7 @@ export function SettingsClient({ user }: { user: UserData }) {
             return (
               <button
                 key={s.id}
-                onClick={() => setActive(s.id)}
+                onClick={() => selectSection(s.id)}
                 className={`flex min-h-11 shrink-0 items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
                   isActive
                     ? "bg-primary/15 text-primary border border-primary/25"
@@ -234,6 +255,28 @@ function ProfileSection({ user }: { user: UserData }) {
           />
         </div>
 
+        {/* Visibility */}
+        <label className="p-4 sm:p-5 flex items-center justify-between gap-4 cursor-pointer">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">Private profile</p>
+            <p className="text-[11px] text-white/30 mt-0.5">
+              Only you can see your catalog. Hidden from Explore and shared
+              links.
+            </p>
+          </div>
+          <span className="relative inline-flex shrink-0">
+            <input
+              type="checkbox"
+              role="switch"
+              name="isPrivate"
+              defaultChecked={user.isPrivate}
+              className="peer sr-only"
+            />
+            <span className="h-6 w-10 rounded-full bg-white/10 border border-white/10 transition-colors peer-checked:bg-primary peer-checked:border-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40" />
+            <span className="pointer-events-none absolute left-1 top-1 size-4 rounded-full bg-white transition-transform peer-checked:translate-x-4" />
+          </span>
+        </label>
+
         {/* Save */}
         <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
           {message ? <Message message={message} /> : <div />}
@@ -256,6 +299,7 @@ function AccountSection({ user }: { user: UserData }) {
   const router = useRouter();
   const [isLinking, setIsLinking] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const hasGoogle = user.providers.includes("google");
   const hasGithub = user.providers.includes("github");
@@ -265,7 +309,7 @@ function AccountSection({ user }: { user: UserData }) {
     try {
       await authClient.linkSocial({
         provider,
-        callbackURL: "/dashboard/settings",
+        callbackURL: "/dashboard/settings?section=account",
       });
     } catch {
       const name = provider === "google" ? "Google" : "GitHub";
@@ -347,31 +391,183 @@ function AccountSection({ user }: { user: UserData }) {
   }
 
   return (
-    <div className="bg-white/3 rounded-2xl border border-white/8 divide-y divide-white/8">
-      {/* Email */}
-      <div className="p-5">
-        <p className="text-xs text-white/40 mb-0.5">Email</p>
-        <p className="text-sm">{user.email}</p>
+    <div className="space-y-6">
+      <div className="bg-white/3 rounded-2xl border border-white/8 divide-y divide-white/8">
+        {/* Email */}
+        <div className="p-5">
+          <p className="text-xs text-white/40 mb-0.5">Email</p>
+          <p className="text-sm">{user.email}</p>
+        </div>
+
+        {/* Connected accounts */}
+        <div className="p-5 space-y-3">
+          <p className="text-xs text-white/40">Connected accounts</p>
+          <ProviderRow
+            provider="google"
+            isConnected={hasGoogle}
+            icon={<GoogleIcon className="size-4" />}
+          />
+          <ProviderRow
+            provider="github"
+            isConnected={hasGithub}
+            icon={
+              <svg className="size-4" viewBox="0 0 24 24" fill="white">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+              </svg>
+            }
+          />
+        </div>
+
+        {/* Export */}
+        <div className="p-5 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">Your data</p>
+            <p className="text-[11px] text-white/30 mt-0.5">
+              Your profile and full catalog as a JSON file.
+            </p>
+          </div>
+          <a
+            href="/api/export"
+            download
+            className="shrink-0 px-4 py-2 rounded-xl text-xs font-medium bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/8 transition-colors"
+          >
+            Download my data
+          </a>
+        </div>
       </div>
 
-      {/* Connected accounts */}
-      <div className="p-5 space-y-3">
-        <p className="text-xs text-white/40">Connected accounts</p>
-        <ProviderRow
-          provider="google"
-          isConnected={hasGoogle}
-          icon={<GoogleIcon className="size-4" />}
-        />
-        <ProviderRow
-          provider="github"
-          isConnected={hasGithub}
-          icon={
-            <svg className="size-4" viewBox="0 0 24 24" fill="white">
-              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
-            </svg>
-          }
-        />
+      {/* Danger zone */}
+      <div className="rounded-2xl border border-red-500/20 bg-red-500/3">
+        <div className="p-5 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-red-400">Delete account</p>
+            <p className="text-[11px] text-white/30 mt-0.5">
+              Permanently removes your profile, catalog, and sign-in methods.
+              This can&apos;t be undone.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setConfirmingDelete(true)}
+            className="shrink-0 px-4 py-2 rounded-xl text-xs font-medium border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+          >
+            Delete account
+          </button>
+        </div>
       </div>
+
+      {confirmingDelete && (
+        <DeleteAccountDialog
+          username={user.username}
+          onClose={() => setConfirmingDelete(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function DeleteAccountDialog({
+  username,
+  onClose,
+}: {
+  username: string;
+  onClose: () => void;
+}) {
+  const expected = username || "delete";
+  const [value, setValue] = useState("");
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState("");
+  const matches = value.trim().toLowerCase() === expected;
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && !isPending) onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose, isPending]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!matches || isPending) return;
+    setIsPending(true);
+    setError("");
+    try {
+      await deleteAccount(value);
+      // The action already cleared the session; this just resets client state.
+      await authClient.signOut().catch(() => {});
+      window.location.assign("/");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to delete account");
+      setIsPending(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:px-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isPending) onClose();
+      }}
+    >
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-account-title"
+        onSubmit={handleSubmit}
+        className="bg-surface-elevated border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md p-5 sm:p-6 space-y-4"
+      >
+        <div>
+          <h3 id="delete-account-title" className="text-lg font-bold">
+            Delete your account?
+          </h3>
+          <p className="text-sm text-white/40 mt-1">
+            Your profile, every game in your catalog, and all connected sign-in
+            methods will be permanently deleted.
+          </p>
+        </div>
+
+        <div>
+          <label
+            htmlFor="delete-confirm"
+            className="text-xs text-white/40 block mb-1.5"
+          >
+            Type <span className="text-white/80 font-medium">{expected}</span>{" "}
+            to confirm
+          </label>
+          <input
+            id="delete-confirm"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            autoFocus
+            autoComplete="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            disabled={isPending}
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-red-500/40 focus:border-red-500/40 transition-colors disabled:opacity-50"
+          />
+        </div>
+
+        {error && <Message message={{ type: "error", text: error }} />}
+
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isPending}
+            className="min-h-11 sm:min-h-0 px-5 py-2 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!matches || isPending}
+            className="min-h-11 sm:min-h-0 px-5 py-2 rounded-xl text-sm font-medium bg-red-500 text-white hover:bg-red-500/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isPending ? "Deleting..." : "Delete account"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

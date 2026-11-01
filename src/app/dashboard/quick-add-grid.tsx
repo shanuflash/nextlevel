@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { igdbCover } from "@/src/lib/igdb";
 import { CATEGORIES } from "@/src/lib/constants";
 import { setGameStatus } from "./games/actions";
 import {
@@ -13,6 +11,7 @@ import {
 } from "@/src/components/category-menu";
 import { toast } from "sonner";
 import type { PopularGame } from "@/src/lib/types";
+import { CoverImage } from "@/src/components/cover-image";
 
 export function QuickAddGrid({ games }: { games: PopularGame[] }) {
   // igdbId -> category the user picked for it here.
@@ -55,7 +54,6 @@ export function QuickAddGrid({ games }: { games: PopularGame[] }) {
 
       <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
         {games.map((g) => {
-          const coverUrl = igdbCover(g.coverImageId, "t_cover_big_2x");
           const addedCat = CATEGORIES.find((c) => c.id === added.get(g.igdbId));
           const firstGenre = g.genres?.split(", ")[0];
 
@@ -63,17 +61,7 @@ export function QuickAddGrid({ games }: { games: PopularGame[] }) {
             <div key={g.igdbId} className="group relative">
               <Link href={`/game/${g.igdbId}`}>
                 <div className="relative aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/20">
-                  {coverUrl ? (
-                    <Image
-                      src={coverUrl}
-                      alt={g.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 50vw, 20vw"
-                    />
-                  ) : (
-                    <div className="size-full bg-white/5" />
-                  )}
+                  <CoverImage imageId={g.coverImageId} alt={g.title} />
                   <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/50 to-transparent p-3 pt-12">
                     <p className="text-xs font-semibold leading-tight line-clamp-2">
                       {g.title}

@@ -35,6 +35,7 @@ export default async function ProfileOG({
     name: string;
     username: string | null;
     bio: string | null;
+    is_private: number;
     total: number;
     finished: number;
     playing: number;
@@ -48,6 +49,7 @@ export default async function ProfileOG({
         u.name,
         u.username,
         u.bio,
+        u.is_private,
         (SELECT COUNT(*) FROM user_game ug WHERE ug.user_id = u.id) AS total,
         (SELECT COUNT(*) FROM user_game ug WHERE ug.user_id = u.id AND ug.category = 'finished') AS finished,
         (SELECT COUNT(*) FROM user_game ug WHERE ug.user_id = u.id AND ug.category = 'playing') AS playing
@@ -60,7 +62,8 @@ export default async function ProfileOG({
     900
   );
 
-  if (!dbUser) {
+  // Unknown or private: generic brand card, no name/bio/counts.
+  if (!dbUser || dbUser.is_private) {
     return new ImageResponse(
       <div
         style={{

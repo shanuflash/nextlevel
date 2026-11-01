@@ -1,14 +1,14 @@
-import Image from "next/image";
 import Link from "next/link";
-import { igdbCover } from "@/src/lib/igdb";
+import { CoverImage } from "@/src/components/cover-image";
 
 interface GameCardProps {
   href: string;
   title: string;
   coverImageId: string | null;
   subtitle?: string;
+  /** Colors the subtitle and keeps it visible on mobile (used for status). */
+  subtitleClassName?: string;
   badge?: { text: string; className: string };
-  sizes?: string;
   coverSize?: "t_cover_big" | "t_cover_big_2x";
 }
 
@@ -17,26 +17,14 @@ export function GameCard({
   title,
   coverImageId,
   subtitle,
+  subtitleClassName,
   badge,
-  sizes = "(max-width: 640px) 33vw, 20vw",
-  coverSize = "t_cover_big_2x",
+  coverSize = "t_cover_big",
 }: GameCardProps) {
-  const coverUrl = igdbCover(coverImageId, coverSize);
-
   return (
     <Link href={href} className="group relative">
       <div className="relative aspect-3/4 overflow-hidden rounded-xl sm:rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/25 sm:group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40">
-        {coverUrl ? (
-          <Image
-            src={coverUrl}
-            alt={title}
-            fill
-            className="object-cover"
-            sizes={sizes}
-          />
-        ) : (
-          <div className="size-full bg-white/5" />
-        )}
+        <CoverImage imageId={coverImageId} size={coverSize} alt={title} />
         {badge && (
           <div
             className={`absolute top-2 right-2 backdrop-blur-sm text-[10px] font-bold px-1.5 py-0.5 rounded-lg ${badge.className}`}
@@ -49,7 +37,11 @@ export function GameCard({
             {title}
           </p>
           {subtitle && (
-            <p className="hidden text-[10px] mt-0.5 text-white/40 sm:block">
+            <p
+              className={`text-[10px] mt-0.5 ${
+                subtitleClassName ?? "hidden text-white/40 sm:block"
+              }`}
+            >
               {subtitle}
             </p>
           )}

@@ -21,7 +21,6 @@ export function RelatedCarousel({
               title={g.title}
               coverImageId={g.coverImageId}
               coverSize="t_cover_big"
-              sizes="128px"
             />
           </div>
         ))}

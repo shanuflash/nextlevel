@@ -4,6 +4,7 @@ import { db } from "@/src/lib/auth";
 import { user as userTable } from "@/schema/auth-schema";
 import { eq } from "drizzle-orm";
 import { AuthNav } from "./auth-nav";
+import { SearchTrigger } from "./game-search";
 
 export async function PublicNav() {
   const session = await getSession();
@@ -39,7 +40,13 @@ export async function PublicNav() {
         <Link href="/dashboard" className="text-lg font-bold">
           Next<span className="text-primary">Level</span>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="hidden sm:block">
+            <SearchTrigger variant="nav" />
+          </div>
+          <div className="sm:hidden">
+            <SearchTrigger variant="icon" />
+          </div>
           <Link
             href="/explore"
             className="min-h-11 px-3 py-2 text-sm text-white/50 hover:text-white/70 transition-colors inline-flex items-center"

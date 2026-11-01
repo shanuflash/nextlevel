@@ -37,6 +37,7 @@ export default async function SettingsPage() {
         bio: dbUser.bio ?? "",
         email: dbUser.email,
         image: dbUser.image ?? undefined,
+        isPrivate: dbUser.isPrivate,
         providers,
         hasPassword,
       }}

@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { updateGame, removeGame } from "./actions";
 import { AddGamesDialog } from "./add-games-dialog";
-import { igdbCover } from "@/src/lib/igdb";
 import { CATEGORIES } from "@/src/lib/constants";
 import {
   CategoryMenu,
@@ -15,21 +14,138 @@ import { GameStatusDialog } from "@/src/components/game-status-dialog";
 import { removeWithUndo } from "@/src/lib/remove-with-undo";
 import { toast } from "sonner";
 import type { UserGameRow } from "@/src/lib/types";
+import { CoverImage } from "@/src/components/cover-image";
 
 export type { UserGameRow };
 
-type SortBy = "newest" | "oldest" | "a-z" | "z-a";
+type SortBy = "newest" | "oldest" | "a-z" | "z-a" | "release";
+
+const SORTS: { id: SortBy; label: string }[] = [
+  { id: "newest", label: "Recently updated" },
+  { id: "oldest", label: "Least recently updated" },
+  { id: "a-z", label: "Title A–Z" },
+  { id: "z-a", label: "Title Z–A" },
+  { id: "release", label: "Release date" },
+];
+
+interface Filters {
+  status: string;
+  q: string;
+  genre: string;
+  platform: string;
+  year: string;
+  sort: SortBy;
+}
+
+const DEFAULT_FILTERS: Filters = {
+  status: "all",
+  q: "",
+  genre: "",
+  platform: "",
+  year: "",
+  sort: "newest",
+};
+
+function readFilters(params: URLSearchParams): Filters {
+  const status = params.get("status") ?? "all";
+  const sort = params.get("sort") as SortBy | null;
+  return {
+    status: CATEGORIES.some((c) => c.id === status) ? status : "all",
+    q: params.get("q") ?? "",
+    genre: params.get("genre") ?? "",
+    platform: params.get("platform") ?? "",
+    year: params.get("year") ?? "",
+    sort: sort && SORTS.some((s) => s.id === sort) ? sort : "newest",
+  };
+}
+
+// Keep filters in the URL so they survive reloads, back/forward and sharing.
+function writeFilters(f: Filters) {
+  const params = new URLSearchParams();
+  for (const key of Object.keys(f) as (keyof Filters)[]) {
+    if (f[key] !== DEFAULT_FILTERS[key]) params.set(key, f[key]);
+  }
+  const query = params.toString();
+  window.history.replaceState(
+    null,
+    "",
+    query ? `?${query}` : window.location.pathname
+  );
+}
+
+function splitList(value: string | null): string[] {
+  return value ? value.split(", ").filter(Boolean) : [];
+}
+
+function toTime(d: Date | string) {
+  return d instanceof Date ? d.getTime() : new Date(d).getTime();
+}
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="relative min-w-0">
+      <span className="sr-only">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`h-10 w-full appearance-none truncate rounded-xl border bg-white/5 pl-3 pr-8 text-xs font-medium focus:border-primary/40 focus:outline-none ${
+          value ? "border-white/20 text-white" : "border-white/10 text-white/55"
+        }`}
+      >
+        {children}
+      </select>
+      <svg
+        aria-hidden
+        className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-white/35"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="m7 10 5 5 5-5" />
+      </svg>
+    </label>
+  );
+}
 
 export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
+  const searchParams = useSearchParams();
   const [games, setGames] = useState(initialGames);
-  const [isShowingAdd, setIsShowingAdd] = useState(false);
+  const [filters, setFilters] = useState(() => readFilters(searchParams));
+  // /dashboard/games?add=1 (dashboard "Add games") opens the dialog directly.
+  const [isShowingAdd, setIsShowingAdd] = useState(
+    () => searchParams.get("add") === "1"
+  );
   const [openGameId, setOpenGameId] = useState<string | null>(null);
   const [menu, setMenu] = useState<{
     anchor: MenuAnchor;
     gameId: string;
   } | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string | "all">("all");
-  const [sortBy, setSortBy] = useState<SortBy>("newest");
+
+  useEffect(() => {
+    // Drop ?add=1 once it has opened the dialog.
+    if (new URLSearchParams(window.location.search).has("add")) {
+      writeFilters(readFilters(new URLSearchParams(window.location.search)));
+    }
+  }, []);
+
+  function updateFilters(patch: Partial<Filters>) {
+    setFilters((prev) => {
+      const next = { ...prev, ...patch };
+      writeFilters(next);
+      return next;
+    });
+  }
 
   const existingIgdbIds = new Set(games.map((g) => g.igdbId));
 
@@ -77,30 +193,68 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
     });
   }
 
+  const options = useMemo(() => {
+    const genres = new Set<string>();
+    const platforms = new Set<string>();
+    const years = new Set<string>();
+    for (const g of games) {
+      splitList(g.genre).forEach((x) => genres.add(x));
+      splitList(g.platforms).forEach((x) => platforms.add(x));
+      if (g.releaseDate) years.add(g.releaseDate.slice(0, 4));
+    }
+    return {
+      genres: [...genres].sort(),
+      platforms: [...platforms].sort(),
+      years: [...years].sort().reverse(),
+    };
+  }, [games]);
+
+  const q = filters.q.trim().toLowerCase();
+  const matchesNonStatus = (g: UserGameRow) =>
+    (!q || g.title.toLowerCase().includes(q)) &&
+    (!filters.genre || splitList(g.genre).includes(filters.genre)) &&
+    (!filters.platform || splitList(g.platforms).includes(filters.platform)) &&
+    (!filters.year || Boolean(g.releaseDate?.startsWith(filters.year)));
+
+  // Status counts reflect the other active filters, so chips never lie.
+  const narrowed = games.filter(matchesNonStatus);
+  const countFor = (status: string) =>
+    narrowed.filter((g) => g.category === status).length;
   const filtered =
-    activeCategory === "all"
-      ? games
-      : games.filter((g) => g.category === activeCategory);
+    filters.status === "all"
+      ? narrowed
+      : narrowed.filter((g) => g.category === filters.status);
 
   const sorted = [...filtered].sort((a, b) => {
-    if (sortBy === "a-z" || sortBy === "z-a") {
-      const cmp = a.title.localeCompare(b.title);
-      return sortBy === "a-z" ? cmp : -cmp;
+    switch (filters.sort) {
+      case "a-z":
+        return a.title.localeCompare(b.title);
+      case "z-a":
+        return b.title.localeCompare(a.title);
+      case "release":
+        return (b.releaseDate ?? "").localeCompare(a.releaseDate ?? "");
+      default: {
+        const diff = toTime(b.updatedAt) - toTime(a.updatedAt);
+        const timeDiff = filters.sort === "newest" ? diff : -diff;
+        return timeDiff !== 0 ? timeDiff : a.title.localeCompare(b.title);
+      }
     }
-    const aTime =
-      a.updatedAt instanceof Date
-        ? a.updatedAt.getTime()
-        : new Date(a.updatedAt).getTime();
-    const bTime =
-      b.updatedAt instanceof Date
-        ? b.updatedAt.getTime()
-        : new Date(b.updatedAt).getTime();
-    const timeDiff = sortBy === "newest" ? bTime - aTime : aTime - bTime;
-    return timeDiff !== 0 ? timeDiff : a.title.localeCompare(b.title);
   });
 
+  const hasFilters = Boolean(
+    q || filters.genre || filters.platform || filters.year
+  );
+  const statusOptions = [
+    { id: "all", label: "All", count: narrowed.length },
+    ...CATEGORIES.map((c) => ({
+      id: c.id,
+      label: c.label,
+      count: countFor(c.id),
+    })),
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">My Games</h1>
@@ -108,143 +262,159 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
             {games.length} game{games.length !== 1 ? "s" : ""} in your catalog
           </p>
         </div>
-        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
-          <button
-            onClick={() => setIsShowingAdd(true)}
-            className="col-span-2 min-h-11 px-5 py-2.5 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
-          >
-            + Add Games
-          </button>
-        </div>
+        <button
+          onClick={() => setIsShowingAdd(true)}
+          className="min-h-11 px-5 py-2.5 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
+        >
+          + Add Games
+        </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:hidden">
-        <label className="relative">
-          <span className="sr-only">Filter by category</span>
-          <select
-            value={activeCategory}
-            onChange={(event) => setActiveCategory(event.target.value)}
-            className="h-11 w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-3 pr-8 text-sm font-medium text-white/80 focus:border-primary/40 focus:outline-none"
-          >
-            <option value="all">All games ({games.length})</option>
-            {CATEGORIES.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.label} ({games.filter((g) => g.category === cat.id).length}
-                )
-              </option>
-            ))}
-          </select>
-          <svg
-            aria-hidden
-            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-white/35"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
+      <div className="space-y-3">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+          <div className="relative lg:w-72 lg:flex-none">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
               strokeLinecap="round"
-              strokeLinejoin="round"
-              d="m7 10 5 5 5-5"
-            />
-          </svg>
-        </label>
-        <label className="relative">
-          <span className="sr-only">Sort games</span>
-          <select
-            value={sortBy}
-            onChange={(event) => setSortBy(event.target.value as SortBy)}
-            className="h-11 w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-3 pr-8 text-sm font-medium text-white/80 focus:border-primary/40 focus:outline-none"
-          >
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
-            <option value="a-z">A–Z</option>
-            <option value="z-a">Z–A</option>
-          </select>
-          <svg
-            aria-hidden
-            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-white/35"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="m7 10 5 5 5-5"
-            />
-          </svg>
-        </label>
-      </div>
-
-      <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:gap-2">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setActiveCategory("all")}
-            className={`shrink-0 min-h-10 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-              activeCategory === "all"
-                ? "bg-white/12 text-white border-white/20"
-                : "text-white/40 border-white/8 hover:text-white/60"
-            }`}
-          >
-            All ({games.length})
-          </button>
-          {CATEGORIES.map((cat) => {
-            const catCount = games.filter((g) => g.category === cat.id).length;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`shrink-0 min-h-10 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                  activeCategory === cat.id
-                    ? cat.bg + " " + cat.color
-                    : "text-white/40 border-white/8 hover:text-white/60"
-                }`}
-              >
-                {cat.label} ({catCount})
-              </button>
-            );
-          })}
-        </div>
-        <div className="ml-auto flex items-center gap-1.5">
-          <span className="text-[11px] text-white/30">Sort:</span>
-          {(
-            [
-              { id: "a-z", label: "A–Z" },
-              { id: "z-a", label: "Z–A" },
-              { id: "newest", label: "Newest" },
-              { id: "oldest", label: "Oldest" },
-            ] as const
-          ).map((opt) => (
-            <button
-              key={opt.id}
-              onClick={() => setSortBy(opt.id)}
-              className={`shrink-0 min-h-9 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
-                sortBy === opt.id
-                  ? "bg-white/12 text-white border-white/20"
-                  : "text-white/40 border-white/8 hover:text-white/60"
-              }`}
+              aria-hidden
+              className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/30"
             >
-              {opt.label}
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              type="search"
+              value={filters.q}
+              onChange={(e) => updateFilters({ q: e.target.value })}
+              placeholder="Search your library"
+              aria-label="Search your library"
+              className="h-10 w-full rounded-xl border border-white/10 bg-white/5 pl-10 pr-3 text-sm focus:border-primary/40 focus:outline-none placeholder:text-white/25"
+            />
+          </div>
+          <div className="hidden sm:flex flex-wrap gap-2 lg:ml-2">
+            {statusOptions.map((opt) => {
+              const cat = CATEGORIES.find((c) => c.id === opt.id);
+              const isActive = filters.status === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => updateFilters({ status: opt.id })}
+                  aria-pressed={isActive}
+                  className={`shrink-0 min-h-10 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                    isActive
+                      ? cat
+                        ? `${cat.bg} ${cat.color}`
+                        : "bg-white/12 text-white border-white/20"
+                      : "text-white/40 border-white/8 hover:text-white/60"
+                  }`}
+                >
+                  {opt.label} ({opt.count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          <div className="sm:hidden">
+            <FilterSelect
+              label="Filter by status"
+              value={filters.status === "all" ? "" : filters.status}
+              onChange={(v) => updateFilters({ status: v || "all" })}
+            >
+              <option value="">All statuses ({narrowed.length})</option>
+              {CATEGORIES.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.label} ({countFor(cat.id)})
+                </option>
+              ))}
+            </FilterSelect>
+          </div>
+          <div className="sm:w-40">
+            <FilterSelect
+              label="Filter by genre"
+              value={filters.genre}
+              onChange={(genre) => updateFilters({ genre })}
+            >
+              <option value="">All genres</option>
+              {options.genres.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </FilterSelect>
+          </div>
+          <div className="sm:w-40">
+            <FilterSelect
+              label="Filter by platform"
+              value={filters.platform}
+              onChange={(platform) => updateFilters({ platform })}
+            >
+              <option value="">All platforms</option>
+              {options.platforms.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </FilterSelect>
+          </div>
+          <div className="sm:w-32">
+            <FilterSelect
+              label="Filter by release year"
+              value={filters.year}
+              onChange={(year) => updateFilters({ year })}
+            >
+              <option value="">Any year</option>
+              {options.years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </FilterSelect>
+          </div>
+          {hasFilters && (
+            <button
+              onClick={() =>
+                updateFilters({ q: "", genre: "", platform: "", year: "" })
+              }
+              className="h-10 px-3 text-xs text-white/40 hover:text-white/70 transition-colors"
+            >
+              Clear filters
             </button>
-          ))}
+          )}
+          <div className="col-span-2 sm:col-span-1 sm:ml-auto sm:w-56">
+            <FilterSelect
+              label="Sort games"
+              value={filters.sort}
+              onChange={(sort) => updateFilters({ sort: sort as SortBy })}
+            >
+              {SORTS.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  Sort: {opt.label}
+                </option>
+              ))}
+            </FilterSelect>
+          </div>
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {sorted.length === 0 ? (
         <div className="text-center py-16 bg-white/3 rounded-2xl border border-white/8">
           <p className="text-white/40 text-sm">
-            {activeCategory === "all"
+            {games.length === 0
               ? "No games yet. Add your first game above."
-              : "No games in this category."}
+              : hasFilters
+                ? "No games match these filters."
+                : "No games in this category."}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4">
           {sorted.map((g) => {
             const cat = CATEGORIES.find((c) => c.id === g.category);
-            const coverUrl = igdbCover(g.coverImageId);
             return (
               <div
                 key={g.id}
@@ -263,17 +433,7 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
                   className="block w-full text-left"
                 >
                   <div className="relative aspect-3/4 overflow-hidden rounded-xl sm:rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/25 sm:group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40">
-                    {coverUrl ? (
-                      <Image
-                        src={coverUrl}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 33vw, (max-width: 768px) 33vw, 20vw"
-                      />
-                    ) : (
-                      <div className="size-full bg-white/5" />
-                    )}
+                    <CoverImage imageId={g.coverImageId} />
                     <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/40 to-transparent p-2 sm:p-3 pt-8 sm:pt-10">
                       <p className="text-[10px] sm:text-xs font-semibold leading-tight line-clamp-2">
                         {g.title}

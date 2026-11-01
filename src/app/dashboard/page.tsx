@@ -6,6 +6,9 @@ import { eq, and, count, desc, gt } from "drizzle-orm";
 import { ProfileUrlCopy } from "./profile-url-copy";
 import { DashboardStats } from "./dashboard-stats";
 import { GameCard } from "@/src/components/game-card";
+import { SearchTrigger } from "@/src/components/game-search";
+import { CATEGORIES } from "@/src/lib/constants";
+import Link from "next/link";
 
 function relativeDate(dateStr: string | null): string {
   if (!dateStr) return "";
@@ -45,6 +48,7 @@ export default async function DashboardPage() {
     dbUser,
     popularGames,
     playingGames,
+    recentlyAdded,
   ] = await Promise.all([
     db
       .select({
@@ -97,6 +101,18 @@ export default async function DashboardPage() {
       .where(and(eq(userGame.userId, userId), eq(userGame.category, "playing")))
       .orderBy(desc(userGame.updatedAt))
       .limit(12),
+    db
+      .select({
+        igdbId: game.igdbId,
+        title: game.title,
+        coverImageId: game.coverImageId,
+        category: userGame.category,
+      })
+      .from(userGame)
+      .innerJoin(game, eq(userGame.gameId, game.id))
+      .where(eq(userGame.userId, userId))
+      .orderBy(desc(userGame.createdAt))
+      .limit(5),
   ]);
 
   const username = dbUser?.username;
@@ -120,6 +136,23 @@ export default async function DashboardPage() {
         {username && <ProfileUrlCopy username={username} />}
       </div>
 
+      {totalGames > 0 && (
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex-1">
+            <SearchTrigger
+              variant="bar"
+              label="Search games to add or look up"
+            />
+          </div>
+          <Link
+            href="/dashboard/games?add=1"
+            className="inline-flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+          >
+            + Add games
+          </Link>
+        </div>
+      )}
+
       <DashboardStats
         totalGames={totalGames}
         categoryMap={categoryMap}
@@ -142,6 +175,37 @@ export default async function DashboardPage() {
                 subtitle={g.genres?.split(", ").slice(0, 2).join(" · ")}
               />
             ))}
+          </div>
+        </div>
+      )}
+
+      {recentlyAdded.length > 0 && (
+        <div>
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider">
+              Recently Added
+            </h2>
+            <Link
+              href="/dashboard/games"
+              className="text-xs text-white/35 hover:text-white/70 transition-colors"
+            >
+              See all
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
+            {recentlyAdded.map((g) => {
+              const cat = CATEGORIES.find((c) => c.id === g.category);
+              return (
+                <GameCard
+                  key={g.igdbId}
+                  href={`/game/${g.igdbId}`}
+                  title={g.title}
+                  coverImageId={g.coverImageId}
+                  subtitle={cat?.label}
+                  subtitleClassName={cat?.color}
+                />
+              );
+            })}
           </div>
         </div>
       )}

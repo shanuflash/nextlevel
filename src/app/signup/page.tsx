@@ -175,6 +175,23 @@ export default function SignupPage() {
             </div>
           )}
 
+          <OAuthButtons
+            disabled={isLoading}
+            onError={setError}
+            onLoadingChange={setIsOAuthLoading}
+          />
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/8" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-surface-divider px-3 text-white/30">
+                or sign up with email
+              </span>
+            </div>
+          </div>
+
           <form onSubmit={handleSignUp} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="name" className="text-sm text-white/60">
@@ -345,21 +362,6 @@ export default function SignupPage() {
               {isLoading ? "Creating account..." : "Create account"}
             </button>
           </form>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/8" />
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-surface-divider px-3 text-white/30">or</span>
-            </div>
-          </div>
-
-          <OAuthButtons
-            disabled={isLoading}
-            onError={setError}
-            onLoadingChange={setIsOAuthLoading}
-          />
 
           <p className="text-center text-sm text-white/40">
             Already have an account?{" "}
