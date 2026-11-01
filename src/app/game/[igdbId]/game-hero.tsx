@@ -2,6 +2,7 @@ import Image from "next/image";
 import { igdbCover, igdbImage, type IGDBGameDetail } from "@/src/lib/igdb";
 import { GameAddButton } from "./game-add-button";
 import { StoreLinks } from "./store-links";
+import { CoverImage } from "@/src/components/cover-image";
 
 // Full-bleed cinematic backdrop behind the hero (absolute; needs a relative parent).
 export function HeroBackdrop({ detail }: { detail: IGDBGameDetail }) {
@@ -11,7 +12,10 @@ export function HeroBackdrop({ detail }: { detail: IGDBGameDetail }) {
   const coverUrl = igdbCover(detail.coverImageId);
 
   return (
-    <div className="absolute inset-x-0 top-0 h-105 sm:h-120 overflow-hidden">
+    // The mask fades the whole stack to transparent at the bottom; without it
+    // the backdrop's edge shows as a hard line through translucent elements
+    // laid over it (details panel, status button).
+    <div className="absolute inset-x-0 top-0 h-105 sm:h-120 overflow-hidden mask-[linear-gradient(to_bottom,black_55%,transparent)]">
       {backdropUrl ? (
         <Image
           src={backdropUrl}
@@ -53,25 +57,18 @@ export function HeroInfo({
   isLoggedIn: boolean;
   existingCategory: string | null;
 }) {
-  const coverUrl = igdbCover(detail.coverImageId);
   const year = detail.releaseDate?.slice(0, 4);
 
   return (
     <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left gap-5 sm:gap-8">
       <div className="w-36 sm:w-52 flex-none">
         <div className="aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/10 shadow-2xl shadow-black/50 relative">
-          {coverUrl ? (
-            <Image
-              src={coverUrl}
-              alt={detail.title}
-              fill
-              priority
-              className="object-cover"
-              sizes="(max-width: 640px) 144px, 208px"
-            />
-          ) : (
-            <div className="size-full bg-white/5" />
-          )}
+          <CoverImage
+            imageId={detail.coverImageId}
+            size="t_cover_big_2x"
+            alt={detail.title}
+            priority
+          />
         </div>
       </div>
 

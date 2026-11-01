@@ -55,6 +55,10 @@ export const userGame = sqliteTable(
     // a destructive migration; no code reads or writes it anymore.
     rating: real("rating"),
     notes: text("notes"),
+    // Pinned to the top of the public profile (max 5, enforced in actions).
+    isFavorite: integer("is_favorite", { mode: "boolean" })
+      .default(false)
+      .notNull(),
     startedAt: integer("started_at", { mode: "timestamp_ms" }),
     finishedAt: integer("finished_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" })

@@ -6,7 +6,7 @@ import { eq, and, count, desc, gt } from "drizzle-orm";
 import { ProfileUrlCopy } from "./profile-url-copy";
 import { DashboardStats } from "./dashboard-stats";
 import { GameCard } from "@/src/components/game-card";
-import { SearchTrigger } from "@/src/components/game-search";
+import { LibraryGameCard } from "./library-game-card";
 import { CATEGORIES } from "@/src/lib/constants";
 import Link from "next/link";
 
@@ -49,6 +49,7 @@ export default async function DashboardPage() {
     popularGames,
     playingGames,
     recentlyAdded,
+    library,
   ] = await Promise.all([
     db
       .select({
@@ -113,7 +114,16 @@ export default async function DashboardPage() {
       .where(eq(userGame.userId, userId))
       .orderBy(desc(userGame.createdAt))
       .limit(5),
+    db
+      .select({ igdbId: userGame.igdbId, category: userGame.category })
+      .from(userGame)
+      .where(eq(userGame.userId, userId)),
   ]);
+
+  // Lets discovery rows show "already in your library" and its status.
+  const libraryStatus = new Map(
+    library.flatMap((g) => (g.igdbId ? [[g.igdbId, g.category]] : []))
+  );
 
   const username = dbUser?.username;
 
@@ -126,32 +136,22 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-7 sm:space-y-8">
-      <div className="flex items-start justify-between gap-4 sm:items-end">
-        <div>
-          <h1 className="text-xl sm:text-3xl font-bold">
-            {totalGames > 0 ? "Welcome back" : "Welcome"}, {session.user.name}
-          </h1>
-          <p className="text-white/40 text-sm mt-1">Your catalog overview.</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl sm:text-3xl font-bold">
+          {totalGames > 0 ? "Welcome back" : "Welcome"}, {session.user.name}
+        </h1>
+        <div className="flex items-center gap-2">
+          {username && <ProfileUrlCopy username={username} />}
+          {totalGames > 0 && (
+            <Link
+              href="/dashboard/games?add=1"
+              className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90 sm:flex-none"
+            >
+              + Add games
+            </Link>
+          )}
         </div>
-        {username && <ProfileUrlCopy username={username} />}
       </div>
-
-      {totalGames > 0 && (
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="flex-1">
-            <SearchTrigger
-              variant="bar"
-              label="Search games to add or look up"
-            />
-          </div>
-          <Link
-            href="/dashboard/games?add=1"
-            className="inline-flex h-12 items-center justify-center rounded-2xl bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary/90"
-          >
-            + Add games
-          </Link>
-        </div>
-      )}
 
       <DashboardStats
         totalGames={totalGames}
@@ -217,9 +217,10 @@ export default async function DashboardPage() {
           </h2>
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
             {hypeGames.map((g) => (
-              <GameCard
+              <LibraryGameCard
                 key={g.igdbId}
-                href={`/game/${g.igdbId}`}
+                igdbId={g.igdbId}
+                initialCategory={libraryStatus.get(g.igdbId)}
                 title={g.title}
                 coverImageId={g.coverImageId}
                 subtitle={g.genres?.split(", ")[0]}
@@ -244,9 +245,10 @@ export default async function DashboardPage() {
           </h2>
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
             {recentGames.map((g) => (
-              <GameCard
+              <LibraryGameCard
                 key={g.igdbId}
-                href={`/game/${g.igdbId}`}
+                igdbId={g.igdbId}
+                initialCategory={libraryStatus.get(g.igdbId)}
                 title={g.title}
                 coverImageId={g.coverImageId}
                 subtitle={g.genres?.split(", ").slice(0, 2).join(" · ")}

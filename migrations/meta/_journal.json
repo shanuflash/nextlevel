@@ -71,6 +71,13 @@
       "when": 1793556477327,
       "tag": "0009_silent_cerebro",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1793561039339,
+      "tag": "0010_woozy_cammi",
+      "breakpoints": true
     }
   ]
 }

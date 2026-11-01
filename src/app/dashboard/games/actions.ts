@@ -104,6 +104,7 @@ export async function addGame(input: AddGameInput): Promise<UserGameRow> {
     genre: existingGame!.genres,
     platforms: existingGame!.platforms,
     releaseDate: existingGame!.releaseDate,
+    isFavorite: false,
     updatedAt: now,
   };
 }
@@ -318,6 +319,7 @@ export async function bulkAddGames(items: BulkAddItem[]) {
             genre: dbGame.genres,
             platforms: dbGame.platforms,
             releaseDate: dbGame.releaseDate,
+            isFavorite: false,
             updatedAt: now,
           },
         });
@@ -453,4 +455,41 @@ export async function restoreGame(removed: RemovedGame): Promise<void> {
   revalidatePath(`/game/${dbGame.igdbId}`);
   revalidatePath("/dashboard/games");
   revalidatePath("/dashboard");
+}
+
+const MAX_FAVORITES = 5;
+
+// Pin/unpin a game to the top of the public profile. Capped so the showcase
+// stays a curated few rather than a second copy of the catalog.
+export async function setFavorite(
+  userGameId: string,
+  favorite: boolean
+): Promise<void> {
+  const session = await getSession();
+  if (!session) throw new Error("Not authenticated");
+
+  if (favorite) {
+    const pinned = await db.query.userGame.findMany({
+      where: and(
+        eq(userGame.userId, session.user.id),
+        eq(userGame.isFavorite, true)
+      ),
+      columns: { id: true },
+    });
+    if (
+      pinned.length >= MAX_FAVORITES &&
+      !pinned.some((p) => p.id === userGameId)
+    ) {
+      throw new Error(`You can pin up to ${MAX_FAVORITES} favourites`);
+    }
+  }
+
+  await db
+    .update(userGame)
+    .set({ isFavorite: favorite })
+    .where(
+      and(eq(userGame.id, userGameId), eq(userGame.userId, session.user.id))
+    );
+
+  revalidatePath("/dashboard/games");
 }

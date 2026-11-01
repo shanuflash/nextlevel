@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { updateGame, removeGame } from "./actions";
+import { updateGame, removeGame, setFavorite } from "./actions";
+import { FavoriteToggle } from "@/src/components/favorite-toggle";
 import { AddGamesDialog } from "./add-games-dialog";
 import { CATEGORIES } from "@/src/lib/constants";
 import {
@@ -165,6 +166,22 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
 
   const openGame = games.find((g) => g.id === openGameId) ?? null;
   const menuGame = menu ? games.find((g) => g.id === menu.gameId) : undefined;
+
+  async function toggleFavorite(game: UserGameRow) {
+    const next = !game.isFavorite;
+    setGames((prev) =>
+      prev.map((g) => (g.id === game.id ? { ...g, isFavorite: next } : g))
+    );
+    try {
+      await setFavorite(game.id, next);
+      toast.success(
+        next ? `Pinned "${game.title}" to your profile` : "Unpinned"
+      );
+    } catch (e) {
+      handleRevert(game);
+      toast.error(e instanceof Error ? e.message : "Failed to update");
+    }
+  }
 
   async function changeCategory(game: UserGameRow, category: string) {
     setGames((prev) =>
@@ -553,7 +570,12 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
           onClose={() => setOpenGameId(null)}
           onChangeCategory={(category) => changeCategory(openGame, category)}
           onRemove={() => remove(openGame)}
-        />
+        >
+          <FavoriteToggle
+            isFavorite={openGame.isFavorite}
+            onToggle={() => toggleFavorite(openGame)}
+          />
+        </GameStatusDialog>
       )}
       {menu && menuGame && (
         <CategoryMenu

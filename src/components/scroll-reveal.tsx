@@ -1,7 +1,63 @@
 "use client";
 
-import { motion } from "framer-motion";
-import type { ReactNode } from "react";
+import {
+  Children,
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from "react";
+
+/*
+ * Reveal-on-scroll that never hides content the server rendered.
+ *
+ * The server HTML carries a plain CSS entrance animation (`.reveal` /
+ * `.reveal-item` in globals.css), so above-the-fold content fades in on first
+ * paint with no JavaScript at all. Once hydrated, elements that are still
+ * below the viewport are switched to a hidden state and revealed by an
+ * IntersectionObserver when scrolled into view. Without JS, without
+ * IntersectionObserver, or with reduced motion, everything simply stays
+ * visible.
+ */
+
+type RevealState = "hidden" | "shown" | undefined;
+
+function useReveal(ref: RefObject<HTMLElement | null>): RevealState {
+  const [state, setState] = useState<RevealState>(undefined);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let first = true;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setState((s) => (s === "hidden" ? "shown" : s));
+          observer.disconnect();
+        } else if (
+          first &&
+          entry.boundingClientRect.top >= window.innerHeight
+        ) {
+          // Only hide what the visitor can't see yet; anything in or above
+          // the viewport keeps its first-paint entrance.
+          setState("hidden");
+        }
+        first = false;
+      },
+      { rootMargin: "0px 0px -60px 0px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return state;
+}
 
 interface ScrollRevealProps {
   children: ReactNode;
@@ -16,18 +72,26 @@ export function ScrollReveal({
   delay = 0,
   y = 24,
 }: ScrollRevealProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const state = useReveal(ref);
+
+  const style: Record<string, string> = {};
+  if (delay) style["--reveal-delay"] = `${delay}s`;
+  if (y !== 24) style["--reveal-y"] = `${y}px`;
+
   return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.5, delay, ease: "easeOut" }}
+    <div
+      ref={ref}
+      className={className ? `reveal ${className}` : "reveal"}
+      data-reveal={state}
+      style={style as CSSProperties}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
+
+const StaggerIndex = createContext(0);
 
 interface StaggerContainerProps {
   children: ReactNode;
@@ -40,19 +104,20 @@ export function StaggerContainer({
   className,
   stagger = 0.08,
 }: StaggerContainerProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const state = useReveal(ref);
+
   return (
-    <motion.div
-      className={className}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-60px" }}
-      variants={{
-        hidden: {},
-        visible: { transition: { staggerChildren: stagger } },
-      }}
+    <div
+      ref={ref}
+      className={className ? `reveal-group ${className}` : "reveal-group"}
+      data-reveal={state}
+      style={{ "--reveal-stagger": `${stagger}s` } as CSSProperties}
     >
-      {children}
-    </motion.div>
+      {Children.map(children, (child, i) => (
+        <StaggerIndex.Provider value={i}>{child}</StaggerIndex.Provider>
+      ))}
+    </div>
   );
 }
 
@@ -63,15 +128,14 @@ export function StaggerItem({
   children: ReactNode;
   className?: string;
 }) {
+  const index = useContext(StaggerIndex);
+
   return (
-    <motion.div
-      className={className}
-      variants={{
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
-      }}
+    <div
+      className={className ? `reveal-item ${className}` : "reveal-item"}
+      style={index ? ({ "--reveal-i": index } as CSSProperties) : undefined}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

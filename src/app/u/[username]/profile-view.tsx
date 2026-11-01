@@ -10,7 +10,9 @@ import {
   updateGame,
   removeGame,
   setGameStatus,
+  setFavorite,
 } from "@/src/app/dashboard/games/actions";
+import { FavoriteToggle } from "@/src/components/favorite-toggle";
 import { GameStatusDialog } from "@/src/components/game-status-dialog";
 import {
   CategoryMenu,
@@ -31,6 +33,7 @@ interface GameItem {
   genre: string | null;
   releaseDate: string | null;
   updatedAt: Date;
+  isFavorite: boolean;
 }
 
 interface Category {
@@ -123,10 +126,13 @@ function ProfileHeader({
   profile,
   counts,
   isOwner,
+  sharedCount,
 }: {
   profile: ProfileData;
   counts: Record<string, number>;
   isOwner: boolean;
+  /** Games both the visitor and this profile have; null when not relevant. */
+  sharedCount: number | null;
 }) {
   const stats = [
     {
@@ -134,7 +140,7 @@ function ProfileHeader({
       value: profile.totalGames,
       className: "text-primary",
     },
-    ...CATEGORIES.filter((c) => c.id !== "dropped").map((c) => ({
+    ...CATEGORIES.map((c) => ({
       label: c.label,
       value: counts[c.id] || 0,
       className: c.color,
@@ -145,12 +151,15 @@ function ProfileHeader({
     <div className="mb-6 space-y-3">
       <div className="flex flex-col gap-4 rounded-2xl sm:rounded-3xl border border-white/8 bg-white/3 p-4 sm:flex-row sm:items-center sm:p-6">
         <div className="flex min-w-0 flex-1 items-center gap-4 sm:gap-5">
-          <Avatar
-            name={profile.displayName}
-            image={profile.avatarUrl}
-            size="lg"
-            showRing
-          />
+          {/* flex-none: otherwise a long name squeezes the avatar on phones */}
+          <div className="flex-none">
+            <Avatar
+              name={profile.displayName}
+              image={profile.avatarUrl}
+              size="lg"
+              showRing
+            />
+          </div>
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold truncate">
               {profile.displayName}
@@ -165,6 +174,11 @@ function ProfileHeader({
             {profile.bio && (
               <p className="text-white/55 mt-2 text-sm line-clamp-2 max-w-md">
                 {profile.bio}
+              </p>
+            )}
+            {sharedCount !== null && sharedCount > 0 && (
+              <p className="mt-2 text-xs text-primary/80">
+                You both have {sharedCount} game{sharedCount !== 1 ? "s" : ""}
               </p>
             )}
           </div>
@@ -296,6 +310,32 @@ function PagedGrid({
   );
 }
 
+/* ─── Showcase rows above the catalog ─── */
+
+function Showcase({
+  title,
+  games,
+  onSelect,
+}: {
+  title: string;
+  games: GameWithCat[];
+  onSelect: (g: GameWithCat) => void;
+}) {
+  if (games.length === 0) return null;
+  return (
+    <section className="mb-6">
+      <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-white/40">
+        {title}
+      </h2>
+      <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-4">
+        {games.map((g) => (
+          <GameCard key={g.id} game={g} showFlag={false} onSelect={onSelect} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ─── Visitor's own status, inside the game sheet ─── */
 
 function VisitorStatus({
@@ -314,7 +354,7 @@ function VisitorStatus({
   if (!isLoggedIn) {
     return (
       <Link
-        href="/signup"
+        href={`/signup?next=${encodeURIComponent(window.location.pathname)}`}
         className="flex min-h-11 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
       >
         Sign up to track this game
@@ -464,6 +504,19 @@ export function ProfileView({
     });
   }
 
+  async function toggleFavorite(game: GameWithCat) {
+    const next = !game.isFavorite;
+    setSelectedGame({ ...game, isFavorite: next });
+    try {
+      await setFavorite(game.id, next);
+      toast.success(next ? "Pinned to your favourites" : "Unpinned");
+      router.refresh();
+    } catch (e) {
+      setSelectedGame(game);
+      toast.error(e instanceof Error ? e.message : "Failed to update");
+    }
+  }
+
   async function setVisitorStatus(igdbId: number, category: string) {
     const prev = viewerStatus[igdbId];
     setViewerStatus((m) => ({ ...m, [igdbId]: category }));
@@ -512,13 +565,51 @@ export function ProfileView({
     });
   }, [activeCategory, releaseFilter, sortBy, profile.categories]);
 
+  const allGames = useMemo(
+    () =>
+      profile.categories.flatMap((cat) =>
+        cat.games.map((g) => ({
+          ...g,
+          categoryId: cat.id,
+          categoryLabel: cat.label,
+        }))
+      ),
+    [profile.categories]
+  );
+  const favorites = allGames.filter((g) => g.isFavorite).slice(0, 5);
+  const nowPlaying = allGames
+    .filter((g) => g.categoryId === "playing")
+    .sort((a, b) => toTime(b.updatedAt) - toTime(a.updatedAt))
+    .slice(0, 6);
+  const sharedCount = allGames.filter((g) => viewerCategories[g.igdbId]).length;
+
   const wantToPlay = profile.categories.find((c) => c.id === "want-to-play");
   const releasedCount =
     wantToPlay?.games.filter((g) => isReleased(g.releaseDate)).length ?? 0;
 
   return (
     <>
-      <ProfileHeader profile={profile} counts={counts} isOwner={isOwner} />
+      <ProfileHeader
+        profile={profile}
+        counts={counts}
+        isOwner={isOwner}
+        sharedCount={isLoggedIn && !isOwner ? sharedCount : null}
+      />
+
+      {activeCategory === "all" && (
+        <>
+          <Showcase
+            title="Favourites"
+            games={favorites}
+            onSelect={setSelectedGame}
+          />
+          <Showcase
+            title="Now playing"
+            games={nowPlaying}
+            onSelect={setSelectedGame}
+          />
+        </>
+      )}
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="flex flex-1 gap-2 overflow-x-auto -mx-4 px-4 pb-1 sm:mx-0 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -643,6 +734,12 @@ export function ProfileView({
           }
           onRemove={isOwner ? () => remove(selectedGame) : undefined}
         >
+          {isOwner && (
+            <FavoriteToggle
+              isFavorite={selectedGame.isFavorite}
+              onToggle={() => toggleFavorite(selectedGame)}
+            />
+          )}
           {!isOwner && (
             <VisitorStatus
               game={selectedGame}

@@ -41,7 +41,7 @@ export function GameAddButton({
   if (!isLoggedIn) {
     return (
       <Link
-        href="/login"
+        href={`/login?next=${encodeURIComponent(`/game/${igdbId}`)}`}
         className="inline-flex justify-center px-5 py-2.5 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
       >
         Sign in to add

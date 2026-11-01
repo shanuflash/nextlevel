@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { db } from "@/src/lib/auth";
 import { user } from "@/schema/auth-schema";
 import { userGame, game } from "@/schema/game-schema";
@@ -9,15 +10,97 @@ import { GameCard } from "@/src/components/game-card";
 import { PublicNav } from "@/src/components/public-nav";
 import { SearchTrigger } from "@/src/components/game-search";
 import { CoverImage } from "@/src/components/cover-image";
+import { findGenre, findPlatform } from "@/src/lib/igdb-browse";
+import {
+  BrowseChips,
+  ComingSoon,
+  FilteredGames,
+  GridSkeleton,
+  NewReleases,
+  RowSkeleton,
+  SectionHeader,
+  TopRated,
+} from "./browse";
 
 export const metadata: Metadata = {
   title: "Explore",
-  description: "Discover new games through gamers worth following.",
+  description:
+    "Discover new releases, upcoming games, all-time greats and gamers worth following.",
 };
 
 const COVERS_PER_TASTEMAKER = 6;
 
-export default async function ExplorePage() {
+// Library stats shown under each tastemaker, in this order; the first two
+// non-zero ones are used.
+const STAT_LABELS = [
+  ["finished", "finished"],
+  ["playing", "playing"],
+  ["want-to-play", "want to play"],
+  ["on-hold", "on hold"],
+] as const;
+
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+const param = (v: string | string[] | undefined) =>
+  typeof v === "string" ? v : undefined;
+
+export default async function ExplorePage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
+  // Unknown slugs are ignored, so a bad link just shows the default page.
+  const genre = findGenre(param(params.genre));
+  const platform = findPlatform(param(params.platform));
+  const filtered = Boolean(genre || platform);
+
+  return (
+    <div className="min-h-screen bg-[#09090d] text-white">
+      <PublicNav />
+
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">Explore</h1>
+          <p className="text-white/40 text-sm mt-1">
+            Find your next game by genre, platform, or the gamers you follow.
+          </p>
+          <div className="mt-5 max-w-xl">
+            <SearchTrigger variant="bar" label="Search any game by name" />
+          </div>
+        </div>
+
+        <BrowseChips genre={genre} platform={platform} />
+
+        {filtered ? (
+          // Keyed so switching chips shows the skeleton, not stale results.
+          <Suspense
+            key={`${genre?.slug}-${platform?.slug}`}
+            fallback={<GridSkeleton />}
+          >
+            <FilteredGames genre={genre} platform={platform} />
+          </Suspense>
+        ) : (
+          <>
+            <Suspense fallback={<RowSkeleton />}>
+              <NewReleases />
+            </Suspense>
+            <Suspense fallback={<RowSkeleton />}>
+              <ComingSoon />
+            </Suspense>
+            <Suspense fallback={<RowSkeleton />}>
+              <TopRated />
+            </Suspense>
+            <Community />
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Tastemakers and the most-tracked games, both from NextLevel's own data. */
+async function Community() {
   const [topUsers, discoverGames] = await Promise.all([
     // Curators, ranked by library size.
     db
@@ -53,174 +136,137 @@ export default async function ExplorePage() {
   // Top 4 curators (fetch a small buffer, then drop any without a public username).
   const tastemakers = topUsers.filter((u) => u.username).slice(0, 4);
 
-  // One grouped query for each curator's cover art + genres (avoids N+1).
+  // Recent covers and per-category counts for each curator, one query each
+  // across all of them (avoids N+1).
   const userIds = tastemakers.map((u) => u.id);
-  const libRows = userIds.length
-    ? await db
-        .select({
-          userId: userGame.userId,
-          coverImageId: game.coverImageId,
-          genres: game.genres,
-          updatedAt: userGame.updatedAt,
-        })
-        .from(userGame)
-        .innerJoin(game, eq(userGame.gameId, game.id))
-        .where(inArray(userGame.userId, userIds))
-        .orderBy(desc(userGame.updatedAt))
-    : [];
+  const [libRows, statRows] = userIds.length
+    ? await Promise.all([
+        db
+          .select({ userId: userGame.userId, coverImageId: game.coverImageId })
+          .from(userGame)
+          .innerJoin(game, eq(userGame.gameId, game.id))
+          .where(inArray(userGame.userId, userIds))
+          .orderBy(desc(userGame.updatedAt)),
+        db
+          .select({
+            userId: userGame.userId,
+            category: userGame.category,
+            n: count(userGame.id),
+          })
+          .from(userGame)
+          .where(inArray(userGame.userId, userIds))
+          .groupBy(userGame.userId, userGame.category),
+      ])
+    : [[], []];
 
+  // Covers: keep the first N with art, newest first.
   const coversByUser = new Map<string, string[]>();
-  const genreTallyByUser = new Map<string, Map<string, number>>();
   for (const row of libRows) {
-    // Covers: keep the first N with art, newest first.
-    if (row.coverImageId) {
-      const list = coversByUser.get(row.userId) ?? [];
-      if (list.length < COVERS_PER_TASTEMAKER) {
-        list.push(row.coverImageId);
-        coversByUser.set(row.userId, list);
-      }
-    }
-    // Genre tally → tagline.
-    if (row.genres) {
-      const tally = genreTallyByUser.get(row.userId) ?? new Map();
-      for (const g of row.genres.split(", ")) {
-        tally.set(g, (tally.get(g) ?? 0) + 1);
-      }
-      genreTallyByUser.set(row.userId, tally);
+    if (!row.coverImageId) continue;
+    const list = coversByUser.get(row.userId) ?? [];
+    if (list.length < COVERS_PER_TASTEMAKER) {
+      list.push(row.coverImageId);
+      coversByUser.set(row.userId, list);
     }
   }
 
-  function topGenre(userId: string): string | null {
-    const tally = genreTallyByUser.get(userId);
-    if (!tally) return null;
-    let best: string | null = null;
-    let bestN = 0;
-    for (const [g, n] of tally) {
-      if (n > bestN) {
-        bestN = n;
-        best = g;
-      }
-    }
-    return best;
+  // "71 finished · 4 playing"
+  const countsByUser = new Map<string, Map<string, number>>();
+  for (const row of statRows) {
+    const m = countsByUser.get(row.userId) ?? new Map<string, number>();
+    m.set(row.category, row.n);
+    countsByUser.set(row.userId, m);
+  }
+  function statLine(userId: string): string | null {
+    const m = countsByUser.get(userId);
+    if (!m) return null;
+    const parts = STAT_LABELS.filter(([key]) => m.get(key))
+      .slice(0, 2)
+      .map(([key, label]) => `${m.get(key)} ${label}`);
+    return parts.length ? parts.join(" · ") : null;
   }
 
   return (
-    <div className="min-h-screen bg-[#09090d] text-white">
-      <PublicNav />
-
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Explore</h1>
-          <p className="text-white/40 text-sm mt-1">
-            Find your next game through gamers worth following.
-          </p>
-          <div className="mt-5 max-w-xl">
-            <SearchTrigger variant="bar" label="Search any game by name" />
-          </div>
-        </div>
-
-        {/* Tastemakers */}
-        {tastemakers.length > 0 && (
-          <section className="mt-8">
-            <div className="flex items-center gap-3 mb-4">
-              <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-white/40">
-                Tastemakers
-              </h2>
-              <div className="flex-1 h-px bg-white/8" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {tastemakers.map((u) => {
-                const covers = coversByUser.get(u.id) ?? [];
-                const genre = topGenre(u.id);
-                return (
-                  <Link
-                    key={u.username}
-                    href={`/u/${u.username}`}
-                    className="group overflow-hidden rounded-2xl border border-white/8 bg-white/3 hover:bg-white/5 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 p-4 pb-3">
-                      <Avatar name={u.name} image={u.image} size="md" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[15px] font-bold truncate">
-                          {u.name}
-                        </p>
-                        <p className="text-xs text-white/40 truncate">
-                          @{u.username}
-                          {genre && (
-                            <span className="text-white/25"> · {genre}</span>
-                          )}
-                        </p>
+    <>
+      {/* Tastemakers */}
+      {tastemakers.length > 0 && (
+        <section className="mt-8">
+          <SectionHeader title="Tastemakers" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {tastemakers.map((u) => {
+              const covers = coversByUser.get(u.id) ?? [];
+              const stats = statLine(u.id);
+              return (
+                <Link
+                  key={u.username}
+                  href={`/u/${u.username}`}
+                  className="group overflow-hidden rounded-2xl border border-white/8 bg-white/3 hover:bg-white/5 transition-colors"
+                >
+                  <div className="flex items-center gap-3 p-4 pb-3">
+                    <Avatar name={u.name} image={u.image} size="md" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[15px] font-bold truncate">{u.name}</p>
+                      <p className="text-xs text-white/40 truncate">
+                        @{u.username}
+                        {stats && (
+                          <span className="text-white/25"> · {stats}</span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="text-right flex-none">
+                      <div className="text-base font-bold text-primary tabular-nums leading-none">
+                        {u.gameCount}
                       </div>
-                      <div className="text-right flex-none">
-                        <div className="text-base font-bold text-primary tabular-nums leading-none">
-                          {u.gameCount}
-                        </div>
-                        <div className="text-[10px] text-white/30 mt-0.5">
-                          games
-                        </div>
+                      <div className="text-[10px] text-white/30 mt-0.5">
+                        games
                       </div>
                     </div>
-                    {u.bio && (
-                      <p className="px-4 pb-3 text-xs text-white/55 line-clamp-2 leading-relaxed">
-                        {u.bio}
-                      </p>
-                    )}
-                    {covers.length > 0 && (
-                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 px-3.5 pb-3.5 [&>*:nth-child(n+5)]:hidden sm:[&>*:nth-child(n+5)]:block">
-                        {covers.map((c, i) => {
-                          return (
-                            <div
-                              key={i}
-                              className="relative aspect-3/4 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/8"
-                            >
-                              <CoverImage
-                                imageId={c}
-                                size="t_cover_small"
-                                placeholderSize="t_thumb"
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* Worth adding */}
-        {discoverGames.length > 0 && (
-          <section className="mt-8">
-            <div className="flex items-center gap-3 mb-4">
-              <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-white/40">
-                Worth Adding
-              </h2>
-              <div className="flex-1 h-px bg-white/8" />
-            </div>
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
-              {discoverGames.map((g) => (
-                <GameCard
-                  key={g.igdbId}
-                  href={`/game/${g.igdbId}`}
-                  title={g.title}
-                  coverImageId={g.coverImageId}
-                  subtitle={g.genres?.split(", ")[0]}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {tastemakers.length === 0 && discoverGames.length === 0 && (
-          <div className="mt-8 bg-white/3 rounded-2xl border border-white/8 p-12 text-center">
-            <p className="text-white/30 text-sm">
-              Nothing tracked yet. Be the first to build a catalog!
-            </p>
+                  </div>
+                  {u.bio && (
+                    <p className="px-4 pb-3 text-xs text-white/55 line-clamp-2 leading-relaxed">
+                      {u.bio}
+                    </p>
+                  )}
+                  {covers.length > 0 && (
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 px-3.5 pb-3.5 [&>*:nth-child(n+5)]:hidden sm:[&>*:nth-child(n+5)]:block">
+                      {covers.map((c, i) => (
+                        <div
+                          key={i}
+                          className="relative aspect-3/4 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/8"
+                        >
+                          <CoverImage
+                            imageId={c}
+                            size="t_cover_small"
+                            placeholderSize="t_thumb"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
           </div>
-        )}
-      </div>
-    </div>
+        </section>
+      )}
+
+      {/* Popular on NextLevel */}
+      {discoverGames.length > 0 && (
+        <section className="mt-8">
+          <SectionHeader title="Popular on NextLevel" />
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
+            {discoverGames.map((g) => (
+              <GameCard
+                key={g.igdbId}
+                href={`/game/${g.igdbId}`}
+                title={g.title}
+                coverImageId={g.coverImageId}
+                subtitle={g.genres?.split(", ")[0]}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+    </>
   );
 }

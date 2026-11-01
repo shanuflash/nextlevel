@@ -97,6 +97,7 @@ export default async function ProfilePage({
           genre: game.genres,
           releaseDate: game.releaseDate,
           updatedAt: userGame.updatedAt,
+          isFavorite: userGame.isFavorite,
         })
         .from(userGame)
         .innerJoin(game, eq(userGame.gameId, game.id))

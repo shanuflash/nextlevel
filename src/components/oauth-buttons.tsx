@@ -10,12 +10,15 @@ interface OAuthButtonsProps {
   disabled?: boolean;
   onError?: (message: string) => void;
   onLoadingChange?: (isLoading: boolean) => void;
+  /** Where to land after OAuth. Must already be a validated relative path. */
+  callbackURL?: string;
 }
 
 export function OAuthButtons({
   disabled,
   onError,
   onLoadingChange,
+  callbackURL = "/dashboard",
 }: OAuthButtonsProps) {
   const [loading, setLoading] = useState({ google: false, github: false });
 
@@ -27,7 +30,7 @@ export function OAuthButtons({
     });
     onLoadingChange?.(true);
     try {
-      await signIn.social({ provider, callbackURL: "/dashboard" });
+      await signIn.social({ provider, callbackURL });
     } catch {
       const name = provider === "google" ? "Google" : "GitHub";
       onError?.(`${name} sign-in failed. Please try again.`);

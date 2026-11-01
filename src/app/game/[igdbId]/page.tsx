@@ -217,10 +217,12 @@ export default async function GameDetailPage({
                       <RelatedCarousel
                         title="Expansions"
                         games={detail.expansions}
+                        stripPrefix={detail.title}
                       />
                       <RelatedCarousel
                         title="DLC & Add-ons"
                         games={detail.dlcs}
+                        stripPrefix={detail.title}
                       />
                       <RelatedCarousel
                         title="Similar games"

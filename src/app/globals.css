@@ -181,3 +181,44 @@
     }
   }
 }
+
+/* ScrollReveal (src/components/scroll-reveal.tsx). Content is visible in the
+   server HTML: it plays a CSS entrance on first paint, and only once JS has
+   confirmed an element is below the fold does it get data-reveal="hidden"
+   until scrolled into view. */
+.reveal,
+.reveal-item {
+  animation: reveal-in 0.5s ease-out var(--reveal-delay, 0s) both;
+}
+.reveal-item {
+  --reveal-y: 20px;
+  --reveal-delay: calc(var(--reveal-i, 0) * var(--reveal-stagger, 0.08s));
+}
+.reveal[data-reveal="hidden"],
+.reveal-group[data-reveal="hidden"] .reveal-item {
+  animation: none;
+  opacity: 0;
+  transform: translateY(var(--reveal-y, 24px));
+}
+.reveal[data-reveal="shown"],
+.reveal-group[data-reveal="shown"] .reveal-item {
+  animation: none;
+  transition:
+    opacity 0.5s ease-out var(--reveal-delay, 0s),
+    transform 0.5s ease-out var(--reveal-delay, 0s);
+}
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--reveal-y, 24px));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-item {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

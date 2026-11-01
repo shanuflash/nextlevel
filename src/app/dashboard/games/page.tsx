@@ -25,6 +25,7 @@ export default async function GamesPage() {
       genre: game.genres,
       platforms: game.platforms,
       releaseDate: game.releaseDate,
+      isFavorite: userGame.isFavorite,
       updatedAt: userGame.updatedAt,
     })
     .from(userGame)

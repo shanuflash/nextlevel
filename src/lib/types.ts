@@ -16,5 +16,6 @@ export interface UserGameRow {
   genre: string | null;
   platforms: string | null;
   releaseDate: string | null;
+  isFavorite: boolean;
   updatedAt: Date;
 }

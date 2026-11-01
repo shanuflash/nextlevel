@@ -18,7 +18,6 @@ export async function updateProfile(formData: FormData) {
     ? rawUsername.toLowerCase().replace(/[^a-z0-9_.]/g, "")
     : "";
   const bio = formData.get("bio") as string;
-  const isPrivate = formData.get("isPrivate") === "on";
 
   if (!name) throw new Error("Name is required");
   if (name.length > 50) throw new Error("Name must be 50 characters or less");
@@ -47,7 +46,6 @@ export async function updateProfile(formData: FormData) {
       username: username || null,
       displayUsername: username || null,
       bio: bio || null,
-      isPrivate,
     })
     .where(eq(user.id, session.user.id));
 
@@ -55,6 +53,23 @@ export async function updateProfile(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/explore");
   if (username) revalidatePath(`/u/${username}`);
+}
+
+// Saved on its own (not via the profile form) so the switch takes effect the
+// moment it's flipped.
+export async function setProfilePrivacy(isPrivate: boolean) {
+  const session = await getSession();
+  if (!session) throw new Error("Not authenticated");
+
+  const [updated] = await db
+    .update(user)
+    .set({ isPrivate })
+    .where(eq(user.id, session.user.id))
+    .returning({ username: user.username });
+
+  revalidatePath("/dashboard/settings");
+  revalidatePath("/explore");
+  if (updated?.username) revalidatePath(`/u/${updated.username}`);
 }
 
 // Permanently deletes the signed-in user and everything they own. Only ever

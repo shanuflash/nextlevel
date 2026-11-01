@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   updateProfile,
+  setProfilePrivacy,
   setNewPassword as setPasswordAction,
   deleteAccount,
 } from "./actions";
@@ -162,7 +163,12 @@ export function SettingsClient({ user }: { user: UserData }) {
             <p className="text-sm text-white/40 mt-0.5">{current.desc}</p>
           </div>
 
-          {active === "profile" && <ProfileSection user={user} />}
+          {active === "profile" && (
+            <>
+              <ProfileSection user={user} />
+              <PrivacyCard initial={user.isPrivate} />
+            </>
+          )}
           {active === "account" && <AccountSection user={user} />}
           {active === "security" && (
             <PasswordSection hasPassword={user.hasPassword} />
@@ -255,30 +261,9 @@ function ProfileSection({ user }: { user: UserData }) {
           />
         </div>
 
-        {/* Visibility */}
-        <label className="p-4 sm:p-5 flex items-center justify-between gap-4 cursor-pointer">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">Private profile</p>
-            <p className="text-[11px] text-white/30 mt-0.5">
-              Only you can see your catalog. Hidden from Explore and shared
-              links.
-            </p>
-          </div>
-          <span className="relative inline-flex shrink-0">
-            <input
-              type="checkbox"
-              role="switch"
-              name="isPrivate"
-              defaultChecked={user.isPrivate}
-              className="peer sr-only"
-            />
-            <span className="h-6 w-10 rounded-full bg-white/10 border border-white/10 transition-colors peer-checked:bg-primary peer-checked:border-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40" />
-            <span className="pointer-events-none absolute left-1 top-1 size-4 rounded-full bg-white transition-transform peer-checked:translate-x-4" />
-          </span>
-        </label>
-
-        {/* Save */}
-        <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
+        {/* Save stays in reach while editing; on phones it sits above the
+            bottom nav dock. */}
+        <div className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-0 z-10 rounded-b-2xl bg-[#111117]/95 backdrop-blur-xl p-4 sm:p-5 flex items-center justify-between gap-4">
           {message ? <Message message={message} /> : <div />}
           <button
             type="submit"
@@ -290,6 +275,51 @@ function ProfileSection({ user }: { user: UserData }) {
         </div>
       </div>
     </form>
+  );
+}
+
+function PrivacyCard({ initial }: { initial: boolean }) {
+  const [isPrivate, setIsPrivate] = useState(initial);
+  const [isPending, setIsPending] = useState(false);
+
+  async function toggle(next: boolean) {
+    setIsPrivate(next);
+    setIsPending(true);
+    try {
+      await setProfilePrivacy(next);
+      toast.success(
+        next ? "Your profile is now private" : "Your profile is now public"
+      );
+    } catch (e) {
+      setIsPrivate(!next);
+      toast.error(e instanceof Error ? e.message : "Failed to update");
+    } finally {
+      setIsPending(false);
+    }
+  }
+
+  return (
+    <label className="mt-4 flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-white/8 bg-white/3 p-4 sm:p-5">
+      <div className="min-w-0">
+        <p className="text-sm font-medium">Private profile</p>
+        <p className="text-[11px] text-white/30 mt-0.5">
+          Only you can see your catalog. Hidden from Explore and shared links.
+          Saves instantly.
+        </p>
+      </div>
+      <span className="relative inline-flex shrink-0">
+        <input
+          type="checkbox"
+          role="switch"
+          checked={isPrivate}
+          disabled={isPending}
+          onChange={(e) => toggle(e.target.checked)}
+          className="peer sr-only"
+        />
+        <span className="h-6 w-10 rounded-full bg-white/10 border border-white/10 transition-colors peer-checked:bg-primary peer-checked:border-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40 peer-disabled:opacity-60" />
+        <span className="pointer-events-none absolute left-1 top-1 size-4 rounded-full bg-white transition-transform peer-checked:translate-x-4" />
+      </span>
+    </label>
   );
 }
 

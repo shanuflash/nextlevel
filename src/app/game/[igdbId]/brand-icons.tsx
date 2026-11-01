@@ -36,3 +36,34 @@ export function XboxIcon({ className }: BrandIconProps) {
     </svg>
   );
 }
+
+// GOG has no glyph in the icon set; a compact wordmark in a rounded tile
+// reads better than a generic globe at icon size.
+export function GogIcon({ className }: BrandIconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden>
+      <rect
+        x="1.5"
+        y="4.5"
+        width="21"
+        height="15"
+        rx="3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <text
+        x="12"
+        y="15.6"
+        textAnchor="middle"
+        fontSize="8.5"
+        fontWeight="800"
+        fontFamily="system-ui, sans-serif"
+        fill="currentColor"
+        letterSpacing="0.3"
+      >
+        GOG
+      </text>
+    </svg>
+  );
+}

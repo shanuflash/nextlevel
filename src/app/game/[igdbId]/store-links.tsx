@@ -21,6 +21,7 @@ import {
   PlayStationIcon,
   XboxIcon,
   EpicGamesIcon,
+  GogIcon,
 } from "./brand-icons";
 
 // Brand glyphs (inline SVG) for stores that the Hugeicons free set lacks.
@@ -31,6 +32,7 @@ const BRAND_ICON: Partial<
   playstation: PlayStationIcon,
   xbox: XboxIcon,
   epic: EpicGamesIcon,
+  gog: GogIcon,
 };
 
 const STORE_ICON: Record<StoreKind, IconSvgElement> = {
@@ -171,7 +173,10 @@ export function StoreLinks({ links }: { links: IGDBStoreLink[] }) {
           )}
 
           {official && socials.length > 0 && (
-            <span className="hidden sm:block h-3.5 w-px bg-white/12" aria-hidden />
+            <span
+              className="hidden sm:block h-3.5 w-px bg-white/12"
+              aria-hidden
+            />
           )}
 
           {socials.length > 0 && (

@@ -6,7 +6,20 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon, PlayIcon } from "@hugeicons/core-free-icons";
 import { youtubeThumb, type IGDBVideo } from "@/src/lib/igdb";
 
-export function TrailerPlayer({ videos }: { videos: IGDBVideo[] }) {
+// IGDB lists videos in upload order, so dev diaries and TV spots often come
+// first. Lead with trailers, then gameplay, then everything else.
+function videoRank(name: string | null | undefined) {
+  const n = (name ?? "").toLowerCase();
+  if (/launch trailer|official trailer|release trailer/.test(n)) return 0;
+  if (/trailer|reveal|announce/.test(n)) return 1;
+  if (/gameplay/.test(n)) return 2;
+  return 3;
+}
+
+export function TrailerPlayer({ videos: unsorted }: { videos: IGDBVideo[] }) {
+  const videos = [...unsorted].sort(
+    (a, b) => videoRank(a.name) - videoRank(b.name)
+  );
   const [active, setActive] = useState<IGDBVideo | null>(null);
   const [showAll, setShowAll] = useState(false);
 
