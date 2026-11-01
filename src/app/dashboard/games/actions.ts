@@ -6,11 +6,17 @@ import { getSession } from "@/src/lib/session";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { fetchIGDBGame, fetchIGDBGames } from "@/src/lib/igdb";
-import type { GameCategory } from "@/src/lib/constants";
+import { CATEGORIES, type GameCategory } from "@/src/lib/constants";
 import type { UserGameRow } from "@/src/lib/types";
 
 function generateId() {
   return crypto.randomUUID();
+}
+
+function assertCategory(category: string): asserts category is GameCategory {
+  if (!CATEGORIES.some((c) => c.id === category)) {
+    throw new Error("Invalid category");
+  }
 }
 
 interface AddGameInput {
@@ -23,6 +29,7 @@ export async function addGame(input: AddGameInput): Promise<UserGameRow> {
   if (!session) throw new Error("Not authenticated");
 
   const { igdbId, category } = input;
+  assertCategory(category);
 
   let existingGame = await db.query.game.findFirst({
     where: eq(game.igdbId, igdbId),
@@ -109,6 +116,7 @@ export async function setGameStatus(input: {
   if (!session) throw new Error("Not authenticated");
 
   const { igdbId, category } = input;
+  assertCategory(category);
 
   const existingGame = await db.query.game.findFirst({
     where: eq(game.igdbId, igdbId),
@@ -154,27 +162,32 @@ export async function setGameStatus(input: {
 }
 
 // Remove a game from the catalog by igdbId (for the public game page).
-export async function removeGameStatus(igdbId: number): Promise<void> {
+// Returns what was deleted so the caller can offer undo.
+export async function removeGameStatus(
+  igdbId: number
+): Promise<RemovedGame | null> {
   const session = await getSession();
   if (!session) throw new Error("Not authenticated");
 
   const existingGame = await db.query.game.findFirst({
     where: eq(game.igdbId, igdbId),
   });
-  if (!existingGame) return;
+  if (!existingGame) return null;
 
-  await db
+  const [removed] = await db
     .delete(userGame)
     .where(
       and(
         eq(userGame.gameId, existingGame.id),
         eq(userGame.userId, session.user.id)
       )
-    );
+    )
+    .returning();
 
   revalidatePath(`/game/${igdbId}`);
   revalidatePath("/dashboard/games");
   revalidatePath("/dashboard");
+  return removed ? toRemovedGame(removed) : null;
 }
 
 interface BulkAddItem {
@@ -186,6 +199,7 @@ export async function bulkAddGames(items: BulkAddItem[]) {
   const session = await getSession();
   if (!session) throw new Error("Not authenticated");
 
+  for (const item of items) assertCategory(item.category);
   const igdbIds = items.map((i) => i.igdbId);
 
   const existingGames = await db.query.game.findMany({
@@ -319,14 +333,12 @@ export async function bulkAddGames(items: BulkAddItem[]) {
   return results;
 }
 
-export async function updateGame(formData: FormData) {
+export async function updateGame(userGameId: string, category: string) {
   const session = await getSession();
   if (!session) throw new Error("Not authenticated");
 
-  const userGameId = formData.get("userGameId") as string;
-  const category = formData.get("category") as string;
-
   if (!userGameId) throw new Error("Missing game ID");
+  assertCategory(category);
 
   const existing = await db.query.userGame.findFirst({
     where: and(
@@ -363,19 +375,78 @@ export async function updateGame(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
-export async function removeGame(formData: FormData) {
+// Everything needed to put a removed catalog entry back exactly as it was.
+export interface RemovedGame {
+  id: string;
+  gameId: string;
+  igdbId: number | null;
+  category: GameCategory;
+  notes: string | null;
+  startedAt: Date | null;
+  finishedAt: Date | null;
+  createdAt: Date;
+}
+
+function toRemovedGame(row: typeof userGame.$inferSelect): RemovedGame {
+  return {
+    id: row.id,
+    gameId: row.gameId,
+    igdbId: row.igdbId,
+    category: row.category,
+    notes: row.notes,
+    startedAt: row.startedAt,
+    finishedAt: row.finishedAt,
+    createdAt: row.createdAt,
+  };
+}
+
+export async function removeGame(userGameId: string): Promise<RemovedGame> {
   const session = await getSession();
   if (!session) throw new Error("Not authenticated");
-
-  const userGameId = formData.get("userGameId") as string;
   if (!userGameId) throw new Error("Missing game ID");
 
-  await db
+  const [removed] = await db
     .delete(userGame)
     .where(
       and(eq(userGame.id, userGameId), eq(userGame.userId, session.user.id))
-    );
+    )
+    .returning();
+  if (!removed) throw new Error("Game not found in your catalog");
 
+  revalidatePath("/dashboard/games");
+  revalidatePath("/dashboard");
+  return toRemovedGame(removed);
+}
+
+// Undo for removeGame / removeGameStatus. Re-inserts the same row (same id,
+// timestamps and notes) for the current user only.
+export async function restoreGame(removed: RemovedGame): Promise<void> {
+  const session = await getSession();
+  if (!session) throw new Error("Not authenticated");
+  assertCategory(removed.category);
+
+  const dbGame = await db.query.game.findFirst({
+    where: eq(game.id, removed.gameId),
+    columns: { id: true, igdbId: true },
+  });
+  if (!dbGame) throw new Error("Game no longer exists");
+
+  await db
+    .insert(userGame)
+    .values({
+      id: removed.id,
+      userId: session.user.id,
+      gameId: dbGame.id,
+      igdbId: dbGame.igdbId,
+      category: removed.category,
+      notes: removed.notes,
+      startedAt: removed.startedAt ? new Date(removed.startedAt) : null,
+      finishedAt: removed.finishedAt ? new Date(removed.finishedAt) : null,
+      createdAt: new Date(removed.createdAt),
+    })
+    .onConflictDoNothing();
+
+  revalidatePath(`/game/${dbGame.igdbId}`);
   revalidatePath("/dashboard/games");
   revalidatePath("/dashboard");
 }

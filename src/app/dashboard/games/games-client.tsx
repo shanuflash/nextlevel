@@ -1,769 +1,63 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import Link from "next/link";
+import { useState } from "react";
 import Image from "next/image";
-import { addGame, updateGame, removeGame, bulkAddGames } from "./actions";
-import { igdbCover, type IGDBGameMeta } from "@/src/lib/igdb";
+import { updateGame, removeGame } from "./actions";
+import { AddGamesDialog } from "./add-games-dialog";
+import { igdbCover } from "@/src/lib/igdb";
 import { CATEGORIES } from "@/src/lib/constants";
+import {
+  CategoryMenu,
+  anchorBelow,
+  type MenuAnchor,
+} from "@/src/components/category-menu";
+import { GameStatusDialog } from "@/src/components/game-status-dialog";
+import { removeWithUndo } from "@/src/lib/remove-with-undo";
 import { toast } from "sonner";
 import type { UserGameRow } from "@/src/lib/types";
 
 export type { UserGameRow };
-
-function AddGameDialog({
-  onClose,
-  existingIgdbIds,
-  onAdded,
-}: {
-  onClose: () => void;
-  existingIgdbIds: Set<number>;
-  onAdded: (rows: UserGameRow[]) => void;
-}) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<IGDBGameMeta[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [selected, setSelected] = useState<IGDBGameMeta | null>(null);
-  const [category, setCategory] = useState("finished");
-  const [isAdding, setIsAdding] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const abortRef = useRef<AbortController>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  const searchIGDB = useCallback(async (q: string) => {
-    const isId = /^\d+$/.test(q.trim());
-    if (!isId && q.length < 2) {
-      setResults([]);
-      setHasSearched(false);
-      return;
-    }
-
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    setIsSearching(true);
-    try {
-      const res = await fetch(`/api/igdb?q=${encodeURIComponent(q)}`, {
-        signal: controller.signal,
-      });
-      const data = await res.json();
-      if (Array.isArray(data)) setResults(data);
-      setHasSearched(true);
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") return;
-      setHasSearched(true);
-    } finally {
-      if (!controller.signal.aborted) setIsSearching(false);
-    }
-  }, []);
-
-  function handleQueryChange(value: string) {
-    setQuery(value);
-    setSelected(null);
-    setHasSearched(false);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => searchIGDB(value), 350);
-  }
-
-  async function handleAdd() {
-    if (!selected) return;
-    setIsAdding(true);
-    try {
-      const row = await addGame({
-        igdbId: selected.igdbId,
-        category,
-      });
-      onAdded([row]);
-      toast.success(`Added "${selected.title}" to your catalog`);
-      onClose();
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to add game");
-    } finally {
-      setIsAdding(false);
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:px-4">
-      <div className="bg-surface-elevated border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-lg max-h-[92dvh] sm:max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-5 sm:p-6 pb-0">
-          <h2 className="text-lg font-semibold">Add Game</h2>
-          <button
-            onClick={onClose}
-            className="size-10 flex items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors -mr-2"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-4">
-          {!selected ? (
-            <>
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => handleQueryChange(e.target.value)}
-                placeholder="Search by name or IGDB ID..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 placeholder:text-white/25"
-              />
-
-              <div className="min-h-[200px]">
-                {isSearching && (
-                  <div className="flex items-center justify-center py-10">
-                    <div className="text-sm text-white/25">Searching...</div>
-                  </div>
-                )}
-
-                {!isSearching && results.length > 0 && (
-                  <div className="space-y-1">
-                    {results.map((r) => {
-                      const alreadyAdded = existingIgdbIds.has(r.igdbId);
-                      return (
-                        <button
-                          key={r.igdbId}
-                          onClick={() => !alreadyAdded && setSelected(r)}
-                          disabled={alreadyAdded}
-                          className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left ${
-                            alreadyAdded
-                              ? "opacity-40 cursor-not-allowed"
-                              : "hover:bg-white/5"
-                          }`}
-                        >
-                          <div className="w-10 h-14 rounded-lg overflow-hidden bg-white/5 flex-none relative">
-                            {r.coverImageId ? (
-                              <Image
-                                src={
-                                  igdbCover(r.coverImageId, "t_cover_small") ??
-                                  ""
-                                }
-                                alt={r.title}
-                                fill
-                                className="object-cover"
-                                sizes="40px"
-                              />
-                            ) : (
-                              <div className="size-full bg-white/5" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {r.title}
-                            </p>
-                            <p className="text-[11px] text-white/30 truncate">
-                              {[
-                                r.releaseDate?.slice(0, 4),
-                                ...r.genres.slice(0, 2),
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
-                            </p>
-                          </div>
-                          {alreadyAdded && (
-                            <span className="text-[11px] text-emerald-400/70 flex-none">
-                              In Library
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {!isSearching && hasSearched && results.length === 0 && (
-                  <p className="text-center text-white/25 text-sm py-10">
-                    No games found for &quot;{query}&quot;
-                  </p>
-                )}
-
-                {!isSearching && !hasSearched && (
-                  <p className="text-center text-white/20 text-sm py-10">
-                    Search by game name or paste an IGDB ID...
-                  </p>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-start gap-4 bg-white/3 rounded-xl p-4 border border-white/8">
-                <div className="w-16 h-22 rounded-lg overflow-hidden bg-white/5 flex-none relative">
-                  {selected.coverImageId ? (
-                    <Image
-                      src={
-                        igdbCover(selected.coverImageId, "t_cover_big") ?? ""
-                      }
-                      alt={selected.title}
-                      fill
-                      className="object-cover"
-                      sizes="64px"
-                    />
-                  ) : (
-                    <div className="size-full bg-white/5" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold">{selected.title}</p>
-                  <p className="text-xs text-white/40 mt-0.5">
-                    {[
-                      selected.releaseDate?.slice(0, 4),
-                      ...selected.genres.slice(0, 3),
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                  {selected.platforms.length > 0 && (
-                    <p className="text-[11px] text-white/25 mt-1">
-                      {selected.platforms.join(", ")}
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={() => setSelected(null)}
-                  className="text-xs text-white/30 hover:text-white/60 flex-none"
-                >
-                  Change
-                </button>
-              </div>
-
-              <div>
-                <label className="text-xs text-white/40 block mb-1.5">
-                  Category *
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {CATEGORIES.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setCategory(c.id)}
-                      className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all text-left ${
-                        category === c.id
-                          ? c.bg + " " + c.color
-                          : "border-white/8 text-white/40 hover:text-white/60"
-                      }`}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
-        {selected && (
-          <div className="p-5 sm:p-6 pt-0 flex justify-end gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl text-sm text-white/40 hover:text-white/70 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAdd}
-              disabled={isAdding}
-              className="px-5 py-2 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              {isAdding ? "Adding..." : "Add to Catalog"}
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-interface QueuedGame {
-  igdbId: number;
-  title: string;
-  coverImageId: string | null;
-  genres: string[];
-  releaseDate: string | null;
-  category: string;
-}
-
-function BulkAddDialog({
-  onClose,
-  existingIgdbIds,
-  onAdded,
-}: {
-  onClose: () => void;
-  existingIgdbIds: Set<number>;
-  onAdded: (rows: UserGameRow[]) => void;
-}) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<IGDBGameMeta[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [queue, setQueue] = useState<QueuedGame[]>([]);
-  const [defaultCategory, setDefaultCategory] = useState("finished");
-  const [isAdding, setIsAdding] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const abortRef = useRef<AbortController>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  const searchIGDB = useCallback(async (q: string) => {
-    const isId = /^\d+$/.test(q.trim());
-    if (!isId && q.length < 2) {
-      setResults([]);
-      setHasSearched(false);
-      return;
-    }
-
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    setIsSearching(true);
-    try {
-      const res = await fetch(`/api/igdb?q=${encodeURIComponent(q)}`, {
-        signal: controller.signal,
-      });
-      const data = await res.json();
-      if (Array.isArray(data)) setResults(data);
-      setHasSearched(true);
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") return;
-      setHasSearched(true);
-    } finally {
-      if (!controller.signal.aborted) setIsSearching(false);
-    }
-  }, []);
-
-  function handleQueryChange(value: string) {
-    setQuery(value);
-    setHasSearched(false);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => searchIGDB(value), 350);
-  }
-
-  function addToQueue(game: IGDBGameMeta) {
-    if (queue.some((q) => q.igdbId === game.igdbId)) return;
-    setQueue((prev) => [
-      ...prev,
-      {
-        igdbId: game.igdbId,
-        title: game.title,
-        coverImageId: game.coverImageId,
-        genres: game.genres,
-        releaseDate: game.releaseDate,
-        category: defaultCategory,
-      },
-    ]);
-  }
-
-  function removeFromQueue(igdbId: number) {
-    setQueue((prev) => prev.filter((q) => q.igdbId !== igdbId));
-  }
-
-  async function handleBulkAdd() {
-    if (queue.length === 0) return;
-    setIsAdding(true);
-    try {
-      const items = queue.map((q) => ({
-        igdbId: q.igdbId,
-        category: q.category,
-      }));
-      const results = await bulkAddGames(items);
-      const addedRows = results.filter((r) => r.ok && r.row).map((r) => r.row!);
-      if (addedRows.length > 0) onAdded(addedRows);
-      const added = results.filter((r) => r.ok).length;
-      const skipped = results.filter((r) => !r.ok).length;
-      if (added > 0)
-        toast.success(
-          `Added ${added} game${added !== 1 ? "s" : ""} to your catalog`
-        );
-      if (skipped > 0)
-        toast.warning(
-          `${skipped} game${skipped !== 1 ? "s" : ""} skipped (already in catalog)`
-        );
-      onClose();
-    } catch {
-      toast.error("Failed to add games");
-    } finally {
-      setIsAdding(false);
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:px-4">
-      <div className="bg-surface-elevated border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-2xl max-h-[92dvh] sm:max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-5 sm:p-6 pb-0">
-          <div>
-            <h2 className="text-lg font-semibold">Bulk Add Games</h2>
-            <p className="text-xs text-white/30 mt-0.5">
-              Search and queue multiple games, then add them all at once.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="size-10 flex items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors -mr-2 flex-none"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-4">
-          {queue.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[11px] text-white/30 mr-0.5">
-                {queue.length} queued:
-              </span>
-              {queue.map((q) => {
-                const cat = CATEGORIES.find((c) => c.id === q.category);
-                return (
-                  <span
-                    key={q.igdbId}
-                    className={`inline-flex items-center gap-1 border rounded-full pl-2 pr-1 py-0.5 text-[11px] ${
-                      cat
-                        ? cat.bg + " " + cat.color
-                        : "bg-white/5 border-white/10 text-white/60"
-                    }`}
-                  >
-                    <span className="truncate max-w-[120px]">{q.title}</span>
-                    <button
-                      onClick={() => removeFromQueue(q.igdbId)}
-                      className="size-4 rounded-full hover:bg-white/10 flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity"
-                    >
-                      ✕
-                    </button>
-                  </span>
-                );
-              })}
-              <button
-                onClick={() => setQueue([])}
-                className="text-[10px] text-white/20 hover:text-white/50 transition-colors ml-1"
-              >
-                Clear
-              </button>
-            </div>
-          )}
-
-          <div>
-            <label className="text-xs text-white/40 block mb-1.5">
-              Default category for new games
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {CATEGORIES.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setDefaultCategory(c.id)}
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-all ${
-                    defaultCategory === c.id
-                      ? c.bg + " " + c.color
-                      : "border-white/8 text-white/40 hover:text-white/60"
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={(e) => handleQueryChange(e.target.value)}
-            placeholder="Search by name or IGDB ID..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 placeholder:text-white/25"
-          />
-
-          <div className="min-h-[120px]">
-            {isSearching && (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-sm text-white/25">Searching...</div>
-              </div>
-            )}
-
-            {!isSearching && results.length > 0 && (
-              <div className="space-y-1">
-                {results.map((r) => {
-                  const inQueue = queue.some((q) => q.igdbId === r.igdbId);
-                  const alreadyAdded = existingIgdbIds.has(r.igdbId);
-                  const isDisabled = inQueue || alreadyAdded;
-                  return (
-                    <button
-                      key={r.igdbId}
-                      onClick={() => !isDisabled && addToQueue(r)}
-                      disabled={isDisabled}
-                      className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left ${
-                        isDisabled
-                          ? "opacity-40 cursor-not-allowed"
-                          : "hover:bg-white/5"
-                      }`}
-                    >
-                      <div className="w-10 h-14 rounded-lg overflow-hidden bg-white/5 flex-none relative">
-                        {r.coverImageId ? (
-                          <Image
-                            src={
-                              igdbCover(r.coverImageId, "t_cover_small") ?? ""
-                            }
-                            alt={r.title}
-                            fill
-                            className="object-cover"
-                            sizes="40px"
-                          />
-                        ) : (
-                          <div className="size-full bg-white/5" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {r.title}
-                        </p>
-                        <p className="text-[11px] text-white/30 truncate">
-                          {[r.releaseDate?.slice(0, 4), ...r.genres.slice(0, 2)]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </p>
-                      </div>
-                      <div className="flex-none text-xs">
-                        {alreadyAdded ? (
-                          <span className="text-emerald-400/70">
-                            In Library
-                          </span>
-                        ) : inQueue ? (
-                          <span className="text-primary">Queued</span>
-                        ) : (
-                          <span className="text-white/20">+ Add</span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {!isSearching && hasSearched && results.length === 0 && (
-              <p className="text-center text-white/25 text-sm py-8">
-                No games found for &quot;{query}&quot;
-              </p>
-            )}
-
-            {!isSearching && !hasSearched && (
-              <p className="text-center text-white/20 text-sm py-8">
-                Search by game name or paste an IGDB ID...
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="p-5 sm:p-6 pt-0 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-sm text-white/40 hover:text-white/70 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleBulkAdd}
-            disabled={isAdding || queue.length === 0}
-            className="px-5 py-2 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
-          >
-            {isAdding
-              ? "Adding..."
-              : `Add ${queue.length} Game${queue.length !== 1 ? "s" : ""}`}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function EditGameDialog({
-  game,
-  onClose,
-  onOptimisticUpdate,
-  onOptimisticRemove,
-  onRevert,
-}: {
-  game: UserGameRow;
-  onClose: () => void;
-  onOptimisticUpdate: (id: string, category: string) => void;
-  onOptimisticRemove: (id: string) => void;
-  onRevert: (game: UserGameRow) => void;
-}) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editCategory, setEditCategory] = useState(game.category);
-  const coverUrl = igdbCover(game.coverImageId, "t_cover_big");
-  const cat = CATEGORIES.find((c) => c.id === game.category);
-
-  async function handleSubmit(formData: FormData) {
-    onOptimisticUpdate(game.id, editCategory);
-    onClose();
-    try {
-      await updateGame(formData);
-      toast.success(`Updated "${game.title}"`);
-    } catch {
-      onRevert(game);
-      toast.error("Failed to update game");
-    }
-  }
-
-  async function handleRemove() {
-    const fd = new FormData();
-    fd.set("userGameId", game.id);
-    onOptimisticRemove(game.id);
-    onClose();
-    try {
-      await removeGame(fd);
-      toast.success(`Removed "${game.title}" from your catalog`);
-    } catch {
-      onRevert(game);
-      toast.error("Failed to remove game");
-    }
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:px-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-surface-elevated border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[92dvh] overflow-y-auto">
-        <div className="relative aspect-video overflow-hidden bg-white/5">
-          {coverUrl ? (
-            <Image
-              src={coverUrl}
-              alt={game.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 448px"
-            />
-          ) : (
-            <div className="size-full bg-white/5" />
-          )}
-          <div className="absolute inset-0 bg-linear-to-t from-surface-elevated via-transparent to-transparent" />
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 size-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="p-5 sm:p-6 -mt-6 sm:-mt-8 relative space-y-4">
-          <div>
-            <h2 className="text-xl font-bold leading-tight">{game.title}</h2>
-            {game.genre && (
-              <p className="text-xs text-white/40 mt-1">{game.genre}</p>
-            )}
-          </div>
-
-          {!isEditing && (
-            <div className="flex items-center gap-3">
-              {cat && (
-                <span
-                  className={`text-xs font-medium px-2.5 py-1 rounded-lg border ${cat.bg} ${cat.color}`}
-                >
-                  {cat.label}
-                </span>
-              )}
-            </div>
-          )}
-
-          {isEditing && (
-            <form action={handleSubmit} className="space-y-4">
-              <input type="hidden" name="userGameId" value={game.id} />
-              <input type="hidden" name="category" value={editCategory} />
-
-              <div>
-                <label className="text-xs text-white/40 block mb-1.5">
-                  Category
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {CATEGORIES.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setEditCategory(c.id)}
-                      className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all text-left ${
-                        editCategory === c.id
-                          ? c.bg + " " + c.color
-                          : "border-white/8 text-white/40 hover:text-white/60"
-                      }`}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-between pt-1">
-                <button
-                  type="button"
-                  onClick={handleRemove}
-                  className="px-4 py-2 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-                >
-                  Remove
-                </button>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 rounded-xl text-sm text-white/40 hover:text-white/70 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
-                  >
-                    Save
-                  </button>
-                </div>
-              </div>
-            </form>
-          )}
-
-          {!isEditing && (
-            <div className="flex gap-2 pt-1">
-              <Link
-                href={`/game/${game.igdbId}`}
-                className="flex-1 text-center px-4 py-2.5 rounded-xl text-sm font-medium bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/8 transition-colors"
-              >
-                View Game Page
-              </Link>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-primary/15 border border-primary/25 text-primary hover:bg-primary/25 transition-colors"
-              >
-                Edit
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 type SortBy = "newest" | "oldest" | "a-z" | "z-a";
 
 export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
   const [games, setGames] = useState(initialGames);
   const [isShowingAdd, setIsShowingAdd] = useState(false);
-  const [isShowingBulkAdd, setIsShowingBulkAdd] = useState(false);
-  const [editingGame, setEditingGame] = useState<UserGameRow | null>(null);
+  const [openGameId, setOpenGameId] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{
+    anchor: MenuAnchor;
+    gameId: string;
+  } | null>(null);
   const [activeCategory, setActiveCategory] = useState<string | "all">("all");
   const [sortBy, setSortBy] = useState<SortBy>("newest");
 
   const existingIgdbIds = new Set(games.map((g) => g.igdbId));
 
-  function handleOptimisticUpdate(id: string, category: string) {
-    setGames((prev) => prev.map((g) => (g.id === id ? { ...g, category } : g)));
+  const openGame = games.find((g) => g.id === openGameId) ?? null;
+  const menuGame = menu ? games.find((g) => g.id === menu.gameId) : undefined;
+
+  async function changeCategory(game: UserGameRow, category: string) {
+    setGames((prev) =>
+      prev.map((g) => (g.id === game.id ? { ...g, category } : g))
+    );
+    try {
+      await updateGame(game.id, category);
+      const cat = CATEGORIES.find((c) => c.id === category);
+      toast.success(`Moved "${game.title}" to ${cat?.label ?? category}`);
+    } catch {
+      handleRevert(game);
+      toast.error("Failed to update game");
+    }
   }
 
-  function handleOptimisticRemove(id: string) {
-    setGames((prev) => prev.filter((g) => g.id !== id));
+  function remove(game: UserGameRow) {
+    setGames((prev) => prev.filter((g) => g.id !== game.id));
+    removeWithUndo({
+      title: game.title,
+      remove: () => removeGame(game.id),
+      onFailed: () => handleRevert(game),
+      onRestored: () => handleRevert(game),
+    });
   }
 
   function handleAdded(rows: UserGameRow[]) {
@@ -816,16 +110,10 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
         </div>
         <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
           <button
-            onClick={() => setIsShowingBulkAdd(true)}
-            className="min-h-11 px-4 py-2.5 rounded-full text-sm font-medium bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/8 transition-colors"
-          >
-            Bulk Add
-          </button>
-          <button
             onClick={() => setIsShowingAdd(true)}
-            className="min-h-11 px-5 py-2.5 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
+            className="col-span-2 min-h-11 px-5 py-2.5 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
           >
-            + Add Game
+            + Add Games
           </button>
         </div>
       </div>
@@ -958,63 +246,103 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
             const cat = CATEGORIES.find((c) => c.id === g.category);
             const coverUrl = igdbCover(g.coverImageId);
             return (
-              <button
+              <div
                 key={g.id}
-                onClick={() => setEditingGame(g)}
-                className="group relative text-left"
+                className="group relative"
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setMenu({
+                    anchor: { x: e.clientX, y: e.clientY },
+                    gameId: g.id,
+                  });
+                }}
               >
-                <div className="relative aspect-3/4 overflow-hidden rounded-xl sm:rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/25 sm:group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40">
-                  {coverUrl ? (
-                    <Image
-                      src={coverUrl}
-                      alt={g.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 33vw, (max-width: 768px) 33vw, 20vw"
-                    />
-                  ) : (
-                    <div className="size-full bg-white/5" />
-                  )}
-                  <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/40 to-transparent p-2 sm:p-3 pt-8 sm:pt-10">
-                    <p className="text-[10px] sm:text-xs font-semibold leading-tight line-clamp-2">
-                      {g.title}
-                    </p>
-                    {cat && (
-                      <p
-                        className={`hidden text-[10px] mt-0.5 sm:block ${cat.color}`}
-                      >
-                        {cat.label}
-                      </p>
+                <button
+                  onClick={() => setOpenGameId(g.id)}
+                  aria-label={`${g.title}${cat ? `, ${cat.label}` : ""}`}
+                  className="block w-full text-left"
+                >
+                  <div className="relative aspect-3/4 overflow-hidden rounded-xl sm:rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/25 sm:group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40">
+                    {coverUrl ? (
+                      <Image
+                        src={coverUrl}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 33vw, (max-width: 768px) 33vw, 20vw"
+                      />
+                    ) : (
+                      <div className="size-full bg-white/5" />
                     )}
+                    <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/40 to-transparent p-2 sm:p-3 pt-8 sm:pt-10">
+                      <p className="text-[10px] sm:text-xs font-semibold leading-tight line-clamp-2">
+                        {g.title}
+                      </p>
+                      {cat && (
+                        <p
+                          className={`flex items-center gap-1 text-[10px] mt-0.5 ${cat.color}`}
+                        >
+                          <span
+                            className={`size-1.5 rounded-full ${cat.bar}`}
+                            aria-hidden
+                          />
+                          {cat.label}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </button>
+                </button>
+                {/* Desktop quick status; on touch the card opens the sheet. */}
+                <button
+                  onClick={(e) =>
+                    setMenu({
+                      anchor: anchorBelow(e.currentTarget, "end"),
+                      gameId: g.id,
+                    })
+                  }
+                  aria-label={`Change status for ${g.title}`}
+                  className="absolute top-2 right-2 hidden sm:flex items-center justify-center size-8 rounded-full bg-black/60 text-white/80 backdrop-blur-sm ring-1 ring-white/15 opacity-0 transition-all group-hover:opacity-100 focus-visible:opacity-100 hover:bg-black/80 hover:text-white sm:group-hover:-translate-y-1"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="size-4"
+                    fill="currentColor"
+                    aria-hidden
+                  >
+                    <circle cx="5" cy="12" r="1.8" />
+                    <circle cx="12" cy="12" r="1.8" />
+                    <circle cx="19" cy="12" r="1.8" />
+                  </svg>
+                </button>
+              </div>
             );
           })}
         </div>
       )}
 
       {isShowingAdd && (
-        <AddGameDialog
+        <AddGamesDialog
           onClose={() => setIsShowingAdd(false)}
           existingIgdbIds={existingIgdbIds}
           onAdded={handleAdded}
         />
       )}
-      {isShowingBulkAdd && (
-        <BulkAddDialog
-          onClose={() => setIsShowingBulkAdd(false)}
-          existingIgdbIds={existingIgdbIds}
-          onAdded={handleAdded}
+      {openGame && (
+        <GameStatusDialog
+          game={openGame}
+          onClose={() => setOpenGameId(null)}
+          onChangeCategory={(category) => changeCategory(openGame, category)}
+          onRemove={() => remove(openGame)}
         />
       )}
-      {editingGame && (
-        <EditGameDialog
-          game={editingGame}
-          onClose={() => setEditingGame(null)}
-          onOptimisticUpdate={handleOptimisticUpdate}
-          onOptimisticRemove={handleOptimisticRemove}
-          onRevert={handleRevert}
+      {menu && menuGame && (
+        <CategoryMenu
+          anchor={menu.anchor}
+          title={menuGame.title}
+          value={menuGame.category}
+          onSelect={(category) => changeCategory(menuGame, category)}
+          onRemove={() => remove(menuGame)}
+          onClose={() => setMenu(null)}
         />
       )}
     </div>

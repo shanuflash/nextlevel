@@ -83,6 +83,14 @@ export interface IGDBGameMeta {
   popularity: number;
 }
 
+// Search results carry enough to tell same-named entries apart: `kind` is the
+// IGDB game_type label for anything that isn't a main game ("Remake", "DLC"…),
+// and `parentTitle` names the base game for DLC/expansions/remakes.
+export interface IGDBSearchResult extends IGDBGameMeta {
+  kind: string | null;
+  parentTitle: string | null;
+}
+
 interface IGDBRawGame {
   id: number;
   name: string;

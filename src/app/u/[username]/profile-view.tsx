@@ -1,17 +1,14 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { igdbCover } from "@/src/lib/igdb";
 import { Avatar } from "@/src/components/avatar";
-import {
-  CATEGORIES,
-  CATEGORY_TAB_COLORS,
-  CATEGORY_BADGE_COLORS,
-} from "@/src/lib/constants";
+import { CATEGORIES, CATEGORY_TAB_COLORS } from "@/src/lib/constants";
 import { updateGame, removeGame } from "@/src/app/dashboard/games/actions";
+import { GameStatusDialog } from "@/src/components/game-status-dialog";
+import { removeWithUndo } from "@/src/lib/remove-with-undo";
 import { toast } from "sonner";
 
 interface GameItem {
@@ -71,182 +68,6 @@ function CategoryFlag({ categoryId }: { categoryId: string }) {
     <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5 rounded-full bg-black/50 backdrop-blur-sm px-2 py-1 text-[10px] font-semibold text-white/90">
       <span className={`size-2 rounded-full ${cat.bar}`} />
       {cat.label}
-    </div>
-  );
-}
-
-/* ─── Game Detail / Edit Modal ─── */
-
-function GameModal({
-  game,
-  isOwner,
-  onClose,
-}: {
-  game: GameWithCat;
-  isOwner: boolean;
-  onClose: () => void;
-}) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [editCategory, setEditCategory] = useState(game.category);
-  const coverUrl = igdbCover(game.coverImageId, "t_cover_big");
-  const cat = CATEGORIES.find((c) => c.id === game.category);
-
-  async function handleSubmit(formData: FormData) {
-    setIsPending(true);
-    try {
-      await updateGame(formData);
-      toast.success(`Updated "${game.title}"`);
-      onClose();
-    } catch {
-      toast.error("Failed to update game");
-    } finally {
-      setIsPending(false);
-    }
-  }
-
-  async function handleRemove() {
-    const fd = new FormData();
-    fd.set("userGameId", game.id);
-    try {
-      await removeGame(fd);
-      toast.success(`Removed "${game.title}" from your catalog`);
-      onClose();
-    } catch {
-      toast.error("Failed to remove game");
-    }
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:px-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-surface-elevated border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[92dvh] overflow-y-auto">
-        {/* Cover image header */}
-        <div className="relative aspect-video overflow-hidden bg-white/5">
-          {coverUrl ? (
-            <Image
-              src={coverUrl}
-              alt={game.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 448px"
-            />
-          ) : (
-            <div className="size-full bg-white/5" />
-          )}
-          <div className="absolute inset-0 bg-linear-to-t from-surface-elevated via-transparent to-transparent" />
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 size-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="p-5 sm:p-6 -mt-6 sm:-mt-8 relative space-y-4">
-          {/* Title & meta */}
-          <div>
-            <h2 className="text-xl font-bold leading-tight">{game.title}</h2>
-            {game.genre && (
-              <p className="text-xs text-white/40 mt-1">{game.genre}</p>
-            )}
-          </div>
-
-          {/* Current status */}
-          {!isEditing && cat && (
-            <div className="flex items-center gap-3">
-              <span
-                className={`text-xs font-medium px-2.5 py-1 rounded-lg border ${
-                  CATEGORY_BADGE_COLORS[game.categoryId] ??
-                  "bg-white/10 text-white/60 border-white/20"
-                }`}
-              >
-                {game.categoryLabel}
-              </span>
-            </div>
-          )}
-
-          {/* Edit form (owner only) */}
-          {isOwner && isEditing && (
-            <form action={handleSubmit} className="space-y-4">
-              <input type="hidden" name="userGameId" value={game.id} />
-              <input type="hidden" name="category" value={editCategory} />
-
-              <div>
-                <label className="text-xs text-white/40 block mb-1.5">
-                  Category
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {CATEGORIES.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setEditCategory(c.id)}
-                      className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all text-left ${
-                        editCategory === c.id
-                          ? c.bg + " " + c.color
-                          : "border-white/8 text-white/40 hover:text-white/60"
-                      }`}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-between pt-1">
-                <button
-                  type="button"
-                  onClick={handleRemove}
-                  className="px-4 py-2 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-                >
-                  Remove
-                </button>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 rounded-xl text-sm text-white/40 hover:text-white/70 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isPending}
-                    className="px-5 py-2 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
-                  >
-                    {isPending ? "Saving..." : "Save"}
-                  </button>
-                </div>
-              </div>
-            </form>
-          )}
-
-          {/* Action buttons */}
-          {!isEditing && (
-            <div className="flex gap-2 pt-1">
-              <Link
-                href={`/game/${game.igdbId}`}
-                className="flex-1 text-center px-4 py-2.5 rounded-xl text-sm font-medium bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/8 transition-colors"
-              >
-                View Game Page
-              </Link>
-              {isOwner && (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium bg-primary/15 border border-primary/25 text-primary hover:bg-primary/25 transition-colors"
-                >
-                  Edit
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
@@ -514,6 +335,32 @@ export function ProfileView({
   );
 
   const [selectedGame, setSelectedGame] = useState<GameWithCat | null>(null);
+  const router = useRouter();
+
+  // Profile data comes from the server, so refresh it after each change.
+  async function changeCategory(game: GameWithCat, category: string) {
+    try {
+      await updateGame(game.id, category);
+      const cat = CATEGORIES.find((c) => c.id === category);
+      toast.success(`Moved "${game.title}" to ${cat?.label ?? category}`);
+      router.refresh();
+    } catch {
+      toast.error("Failed to update game");
+    }
+  }
+
+  function remove(game: GameWithCat) {
+    removeWithUndo({
+      title: game.title,
+      remove: async () => {
+        const removed = await removeGame(game.id);
+        router.refresh();
+        return removed;
+      },
+      onFailed: () => router.refresh(),
+      onRestored: () => router.refresh(),
+    });
+  }
 
   const filteredGames = useMemo(() => {
     if (activeCategory === "all") {
@@ -635,10 +482,15 @@ export function ProfileView({
       )}
 
       {selectedGame && (
-        <GameModal
+        <GameStatusDialog
           game={selectedGame}
-          isOwner={isOwner}
           onClose={() => setSelectedGame(null)}
+          onChangeCategory={
+            isOwner
+              ? (category) => changeCategory(selectedGame, category)
+              : undefined
+          }
+          onRemove={isOwner ? () => remove(selectedGame) : undefined}
         />
       )}
     </>

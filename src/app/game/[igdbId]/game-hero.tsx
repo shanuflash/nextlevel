@@ -109,6 +109,7 @@ export function HeroInfo({
         <div className="mt-5 w-full flex flex-wrap items-center justify-center sm:justify-start gap-3">
           <GameAddButton
             igdbId={igdbId}
+            title={detail.title}
             isLoggedIn={isLoggedIn}
             existingCategory={existingCategory}
           />
