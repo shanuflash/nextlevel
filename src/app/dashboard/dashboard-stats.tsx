@@ -31,8 +31,8 @@ export function DashboardStats({
   }
 
   return (
-    <div className="flex flex-col sm:flex-row overflow-hidden rounded-2xl border border-white/8 bg-white/3">
-      <div className="flex-1 px-5 py-4 border-b sm:border-b-0 sm:border-r border-white/8">
+    <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-0 sm:overflow-hidden sm:rounded-2xl sm:border sm:border-white/8 sm:bg-white/3">
+      <div className="min-w-0 rounded-xl border border-white/8 bg-white/3 px-4 py-3.5 sm:flex-1 sm:rounded-none sm:border-0 sm:border-r sm:bg-transparent sm:px-5 sm:py-4">
         <div className="text-2xl font-bold tabular-nums leading-none text-primary">
           {totalGames}
         </div>
@@ -43,9 +43,11 @@ export function DashboardStats({
       {CATEGORIES.map((cat) => (
         <div
           key={cat.id}
-          className="flex-1 px-5 py-4 border-b last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0 border-white/8"
+          className="min-w-0 rounded-xl border border-white/8 bg-white/3 px-4 py-3.5 sm:flex-1 sm:rounded-none sm:border-0 sm:border-r sm:last:border-r-0 sm:bg-transparent sm:px-5 sm:py-4"
         >
-          <div className={`text-2xl font-bold tabular-nums leading-none ${cat.color}`}>
+          <div
+            className={`text-2xl font-bold tabular-nums leading-none ${cat.color}`}
+          >
             {categoryMap[cat.id] || 0}
           </div>
           <div className="mt-2 text-[11px] text-white/40 flex items-center gap-1.5">

@@ -117,7 +117,7 @@ export default async function GameDetailPage({
     return (
       <div className="min-h-screen bg-[#09090d] text-white">
         <PublicNav />
-        <div className="mx-auto max-w-6xl px-6 py-10">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-10">
           <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 mb-10">
             <div className="w-40 sm:w-52 flex-none mx-auto sm:mx-0">
               <div className="aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/10 relative">
@@ -125,7 +125,8 @@ export default async function GameDetailPage({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={
-                      igdbImage(cached.coverImageId, "t_cover_big_2x") ?? undefined
+                      igdbImage(cached.coverImageId, "t_cover_big_2x") ??
+                      undefined
                     }
                     alt={cached.title}
                     className="size-full object-cover"
@@ -164,7 +165,7 @@ export default async function GameDetailPage({
       <div className="relative">
         <HeroBackdrop detail={detail} />
 
-        <main className="relative mx-auto max-w-6xl px-6 pt-16 sm:pt-40 pb-16">
+        <main className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-16 sm:pt-40 pb-16">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 lg:items-start">
             {/* Left: hero info, then the page content */}
             <div className="lg:col-span-2 min-w-0">
@@ -177,58 +178,61 @@ export default async function GameDetailPage({
 
               <div className="mt-12 space-y-12">
                 {aboutText && (
-              <ScrollReveal>
-                <section>
-                  <h2 className="text-lg font-semibold mb-3">About</h2>
-                  <ExpandableText text={aboutText} />
-                  {detail.summary && detail.storyline && (
-                    <details className="group mt-4 rounded-xl border border-white/8 bg-white/3">
-                      <summary className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-white/70 cursor-pointer hover:text-white transition-colors list-none select-none">
-                        <HugeiconsIcon
-                          icon={ArrowDown01Icon}
-                          className="size-4 text-white/40 transition-transform group-open:rotate-180"
-                          strokeWidth={2}
-                        />
-                        Show storyline
-                      </summary>
-                      <p className="text-white/55 text-sm leading-relaxed whitespace-pre-line px-4 pb-4">
-                        {detail.storyline}
-                      </p>
-                    </details>
-                  )}
-                </section>
-              </ScrollReveal>
-            )}
+                  <ScrollReveal>
+                    <section>
+                      <h2 className="text-lg font-semibold mb-3">About</h2>
+                      <ExpandableText text={aboutText} />
+                      {detail.summary && detail.storyline && (
+                        <details className="group mt-4 rounded-xl border border-white/8 bg-white/3">
+                          <summary className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-white/70 cursor-pointer hover:text-white transition-colors list-none select-none">
+                            <HugeiconsIcon
+                              icon={ArrowDown01Icon}
+                              className="size-4 text-white/40 transition-transform group-open:rotate-180"
+                              strokeWidth={2}
+                            />
+                            Show storyline
+                          </summary>
+                          <p className="text-white/55 text-sm leading-relaxed whitespace-pre-line px-4 pb-4">
+                            {detail.storyline}
+                          </p>
+                        </details>
+                      )}
+                    </section>
+                  </ScrollReveal>
+                )}
 
-            {hasMedia && (
-              <ScrollReveal>
-                <section id="media" className="space-y-6 scroll-mt-6">
-                  <h2 className="text-lg font-semibold">Media</h2>
-                  <TrailerPlayer videos={detail.videos} />
-                  <MediaGallery imageIds={detail.screenshotImageIds} />
-                </section>
-              </ScrollReveal>
-            )}
+                {hasMedia && (
+                  <ScrollReveal>
+                    <section id="media" className="space-y-6 scroll-mt-6">
+                      <h2 className="text-lg font-semibold">Media</h2>
+                      <TrailerPlayer videos={detail.videos} />
+                      <MediaGallery imageIds={detail.screenshotImageIds} />
+                    </section>
+                  </ScrollReveal>
+                )}
 
-            {hasRelated && (
-              <ScrollReveal>
-                <div className="space-y-10">
-                  <RelatedCarousel
-                    title="Expansions"
-                    games={detail.expansions}
-                  />
-                  <RelatedCarousel title="DLC & Add-ons" games={detail.dlcs} />
-                  <RelatedCarousel
-                    title="Similar games"
-                    games={detail.similarGames}
-                  />
-                </div>
-              </ScrollReveal>
-            )}
+                {hasRelated && (
+                  <ScrollReveal>
+                    <div className="space-y-10">
+                      <RelatedCarousel
+                        title="Expansions"
+                        games={detail.expansions}
+                      />
+                      <RelatedCarousel
+                        title="DLC & Add-ons"
+                        games={detail.dlcs}
+                      />
+                      <RelatedCarousel
+                        title="Similar games"
+                        games={detail.similarGames}
+                      />
+                    </div>
+                  </ScrollReveal>
+                )}
               </div>
             </div>
 
-            <aside className="lg:sticky lg:top-6 lg:self-start">
+            <aside className="lg:sticky lg:top-20 lg:self-start">
               <DetailsGrid detail={detail} />
             </aside>
           </div>

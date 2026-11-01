@@ -101,7 +101,7 @@ export function SettingsClient({ user }: { user: UserData }) {
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold">Settings</h1>
         <p className="text-white/40 text-sm mt-1">
           Manage your profile and account.
@@ -110,14 +110,14 @@ export function SettingsClient({ user }: { user: UserData }) {
 
       <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 md:gap-10">
         {/* Sidebar nav */}
-        <nav className="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible -mx-1 px-1 md:mx-0 md:px-0">
+        <nav className="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible -mx-4 px-4 pb-1 md:mx-0 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {SECTIONS.map((s) => {
             const isActive = s.id === active;
             return (
               <button
                 key={s.id}
                 onClick={() => setActive(s.id)}
-                className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
+                className={`flex min-h-11 shrink-0 items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
                   isActive
                     ? "bg-primary/15 text-primary border border-primary/25"
                     : "text-white/40 hover:text-white/70 border border-transparent"
@@ -178,7 +178,7 @@ function ProfileSection({ user }: { user: UserData }) {
     <form action={handleSubmit}>
       <div className="bg-white/3 rounded-2xl border border-white/8 divide-y divide-white/8">
         {/* Display Name */}
-        <div className="p-5">
+        <div className="p-4 sm:p-5">
           <label className="text-xs text-white/40 block mb-2">
             Display Name
           </label>
@@ -191,7 +191,7 @@ function ProfileSection({ user }: { user: UserData }) {
         </div>
 
         {/* Username */}
-        <div className="p-5">
+        <div className="p-4 sm:p-5">
           <label className="text-xs text-white/40 block mb-2">Username</label>
           <div className="flex items-center bg-white/5 border border-white/10 rounded-xl overflow-hidden focus-within:ring-1 focus-within:ring-primary/40 focus-within:border-primary/40 transition-colors">
             <span className="pl-3.5 text-sm text-white/25 select-none shrink-0">
@@ -222,7 +222,7 @@ function ProfileSection({ user }: { user: UserData }) {
         </div>
 
         {/* Bio */}
-        <div className="p-5">
+        <div className="p-4 sm:p-5">
           <label className="text-xs text-white/40 block mb-2">Bio</label>
           <textarea
             name="bio"
@@ -235,7 +235,7 @@ function ProfileSection({ user }: { user: UserData }) {
         </div>
 
         {/* Save */}
-        <div className="p-5 flex items-center justify-between gap-4">
+        <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
           {message ? <Message message={message} /> : <div />}
           <button
             type="submit"

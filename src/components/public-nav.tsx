@@ -34,24 +34,21 @@ export async function PublicNav() {
   }
 
   return (
-    <nav className="border-b border-white/6 bg-white/1">
-      <div className="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between">
-        <Link
-          href="/dashboard"
-          className="text-lg font-bold"
-        >
+    <nav className="sticky top-0 z-40 border-b border-white/6 bg-[#09090d]/85 backdrop-blur-xl">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 h-14 flex items-center justify-between">
+        <Link href="/dashboard" className="text-lg font-bold">
           Next<span className="text-primary">Level</span>
         </Link>
         <div className="flex items-center gap-3">
           <Link
             href="/explore"
-            className="px-3 py-2 text-sm text-white/40 hover:text-white/70 transition-colors"
+            className="min-h-11 px-3 py-2 text-sm text-white/50 hover:text-white/70 transition-colors inline-flex items-center"
           >
             Explore
           </Link>
           <Link
             href="/login"
-            className="px-4 py-2 rounded-full text-sm font-medium bg-white text-black hover:bg-white/90 transition-colors"
+            className="min-h-11 px-4 py-2 rounded-full text-sm font-medium bg-white text-black hover:bg-white/90 transition-colors inline-flex items-center"
           >
             Sign In
           </Link>

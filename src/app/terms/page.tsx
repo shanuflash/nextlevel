@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-[#09090d] text-white">
-      <div className="mx-auto max-w-3xl px-6 py-16">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10 sm:py-16">
         <div className="mb-12">
           <Link
             href="/"
@@ -27,10 +27,10 @@ export default function TermsPage() {
               1. Acceptance of Terms
             </h2>
             <p>
-              By accessing or using NextLevel (&quot;the Service&quot;), you agree to be
-              bound by these Terms of Service. If you do not agree, do not use
-              the Service. NextLevel is a personal gaming catalog and discovery
-              platform. These terms govern your use of the website at{" "}
+              By accessing or using NextLevel (&quot;the Service&quot;), you
+              agree to be bound by these Terms of Service. If you do not agree,
+              do not use the Service. NextLevel is a personal gaming catalog and
+              discovery platform. These terms govern your use of the website at{" "}
               <span className="text-white/90">nextlevel.shanu.dev</span>.
             </p>
           </section>

@@ -126,9 +126,27 @@
   }
   html {
     background-color: #09090d;
+    color-scheme: dark;
+    overflow-x: hidden;
   }
   body {
     @apply bg-background text-foreground;
+    /* clip, not hidden: hidden turns body into a scroll container and kills
+       position: sticky on the navs and game details panel. */
+    overflow-x: clip;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (max-width: 767px) {
+    /* Keyed off the bar's presence rather than a JS-toggled body class, which
+       raced with loading-state navs unmounting and left public pages unpadded. */
+    body:has([data-auth-mobile-nav]) {
+      padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+    }
+
+    body:has([data-auth-mobile-nav]) > a[href^="https://shanu.dev"] {
+      display: none !important;
+    }
   }
   /* Headings are tightened once here instead of repeating `tracking-tight`
      on every heading in markup. Space Grotesk is the single UI font, so no
@@ -137,5 +155,18 @@
   h2,
   h3 {
     letter-spacing: -0.025em;
+  }
+
+  button,
+  a {
+    touch-action: manipulation;
+  }
+
+  @media (max-width: 639px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px;
+    }
   }
 }

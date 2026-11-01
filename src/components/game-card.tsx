@@ -25,7 +25,7 @@ export function GameCard({
 
   return (
     <Link href={href} className="group relative">
-      <div className="relative aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/25 group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40">
+      <div className="relative aspect-3/4 overflow-hidden rounded-xl sm:rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/25 sm:group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40">
         {coverUrl ? (
           <Image
             src={coverUrl}
@@ -44,12 +44,14 @@ export function GameCard({
             {badge.text}
           </div>
         )}
-        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/50 to-transparent p-3 pt-12">
-          <p className="text-xs font-semibold leading-tight line-clamp-2">
+        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/95 via-black/55 to-transparent p-2 sm:p-3 pt-9 sm:pt-12">
+          <p className="text-[10px] sm:text-xs font-semibold leading-tight line-clamp-2">
             {title}
           </p>
           {subtitle && (
-            <p className="text-[10px] mt-0.5 text-white/40">{subtitle}</p>
+            <p className="hidden text-[10px] mt-0.5 text-white/40 sm:block">
+              {subtitle}
+            </p>
           )}
         </div>
       </div>

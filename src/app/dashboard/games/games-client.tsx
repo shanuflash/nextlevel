@@ -90,9 +90,9 @@ function AddGameDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-      <div className="bg-surface-elevated border border-white/10 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-6 pb-0">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:px-4">
+      <div className="bg-surface-elevated border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-lg max-h-[92dvh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-5 sm:p-6 pb-0">
           <h2 className="text-lg font-semibold">Add Game</h2>
           <button
             onClick={onClose}
@@ -102,7 +102,7 @@ function AddGameDialog({
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1 space-y-4">
+        <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-4">
           {!selected ? (
             <>
               <input
@@ -255,7 +255,7 @@ function AddGameDialog({
         </div>
 
         {selected && (
-          <div className="p-6 pt-0 flex justify-end gap-2">
+          <div className="p-5 sm:p-6 pt-0 flex justify-end gap-2">
             <button
               onClick={onClose}
               className="px-4 py-2 rounded-xl text-sm text-white/40 hover:text-white/70 transition-colors"
@@ -372,9 +372,7 @@ function BulkAddDialog({
         category: q.category,
       }));
       const results = await bulkAddGames(items);
-      const addedRows = results
-        .filter((r) => r.ok && r.row)
-        .map((r) => r.row!);
+      const addedRows = results.filter((r) => r.ok && r.row).map((r) => r.row!);
       if (addedRows.length > 0) onAdded(addedRows);
       const added = results.filter((r) => r.ok).length;
       const skipped = results.filter((r) => !r.ok).length;
@@ -395,9 +393,9 @@ function BulkAddDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-      <div className="bg-surface-elevated border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-6 pb-0">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:px-4">
+      <div className="bg-surface-elevated border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-2xl max-h-[92dvh] sm:max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-5 sm:p-6 pb-0">
           <div>
             <h2 className="text-lg font-semibold">Bulk Add Games</h2>
             <p className="text-xs text-white/30 mt-0.5">
@@ -412,7 +410,7 @@ function BulkAddDialog({
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1 space-y-4">
+        <div className="p-5 sm:p-6 overflow-y-auto flex-1 space-y-4">
           {queue.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[11px] text-white/30 mr-0.5">
@@ -557,7 +555,7 @@ function BulkAddDialog({
           </div>
         </div>
 
-        <div className="p-6 pt-0 flex justify-end gap-2">
+        <div className="p-5 sm:p-6 pt-0 flex justify-end gap-2">
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-xl text-sm text-white/40 hover:text-white/70 transition-colors"
@@ -625,12 +623,12 @@ function EditGameDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:px-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-surface-elevated border border-white/10 rounded-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-surface-elevated border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[92dvh] overflow-y-auto">
         <div className="relative aspect-video overflow-hidden bg-white/5">
           {coverUrl ? (
             <Image
@@ -652,7 +650,7 @@ function EditGameDialog({
           </button>
         </div>
 
-        <div className="p-6 -mt-8 relative space-y-4">
+        <div className="p-5 sm:p-6 -mt-6 sm:-mt-8 relative space-y-4">
           <div>
             <h2 className="text-xl font-bold leading-tight">{game.title}</h2>
             {game.genre && (
@@ -761,9 +759,7 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
   const existingIgdbIds = new Set(games.map((g) => g.igdbId));
 
   function handleOptimisticUpdate(id: string, category: string) {
-    setGames((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, category } : g))
-    );
+    setGames((prev) => prev.map((g) => (g.id === id ? { ...g, category } : g)));
   }
 
   function handleOptimisticRemove(id: string) {
@@ -818,27 +814,87 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
             {games.length} game{games.length !== 1 ? "s" : ""} in your catalog
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2">
           <button
             onClick={() => setIsShowingBulkAdd(true)}
-            className="px-4 py-2.5 rounded-full text-sm font-medium bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/8 transition-colors"
+            className="min-h-11 px-4 py-2.5 rounded-full text-sm font-medium bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/8 transition-colors"
           >
             Bulk Add
           </button>
           <button
             onClick={() => setIsShowingAdd(true)}
-            className="px-5 py-2.5 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
+            className="min-h-11 px-5 py-2.5 rounded-full text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-colors"
           >
             + Add Game
           </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:hidden">
+        <label className="relative">
+          <span className="sr-only">Filter by category</span>
+          <select
+            value={activeCategory}
+            onChange={(event) => setActiveCategory(event.target.value)}
+            className="h-11 w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-3 pr-8 text-sm font-medium text-white/80 focus:border-primary/40 focus:outline-none"
+          >
+            <option value="all">All games ({games.length})</option>
+            {CATEGORIES.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.label} ({games.filter((g) => g.category === cat.id).length}
+                )
+              </option>
+            ))}
+          </select>
+          <svg
+            aria-hidden
+            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-white/35"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="m7 10 5 5 5-5"
+            />
+          </svg>
+        </label>
+        <label className="relative">
+          <span className="sr-only">Sort games</span>
+          <select
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value as SortBy)}
+            className="h-11 w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-3 pr-8 text-sm font-medium text-white/80 focus:border-primary/40 focus:outline-none"
+          >
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="a-z">A–Z</option>
+            <option value="z-a">Z–A</option>
+          </select>
+          <svg
+            aria-hidden
+            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-white/35"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="m7 10 5 5 5-5"
+            />
+          </svg>
+        </label>
+      </div>
+
+      <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:gap-2">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setActiveCategory("all")}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+            className={`shrink-0 min-h-10 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
               activeCategory === "all"
                 ? "bg-white/12 text-white border-white/20"
                 : "text-white/40 border-white/8 hover:text-white/60"
@@ -852,7 +908,7 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                className={`shrink-0 min-h-10 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
                   activeCategory === cat.id
                     ? cat.bg + " " + cat.color
                     : "text-white/40 border-white/8 hover:text-white/60"
@@ -863,7 +919,7 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
             );
           })}
         </div>
-        <div className="flex items-center gap-1.5 ml-auto">
+        <div className="ml-auto flex items-center gap-1.5">
           <span className="text-[11px] text-white/30">Sort:</span>
           {(
             [
@@ -876,7 +932,7 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
             <button
               key={opt.id}
               onClick={() => setSortBy(opt.id)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
+              className={`shrink-0 min-h-9 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
                 sortBy === opt.id
                   ? "bg-white/12 text-white border-white/20"
                   : "text-white/40 border-white/8 hover:text-white/60"
@@ -897,7 +953,7 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4">
           {sorted.map((g) => {
             const cat = CATEGORIES.find((c) => c.id === g.category);
             const coverUrl = igdbCover(g.coverImageId);
@@ -907,24 +963,26 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
                 onClick={() => setEditingGame(g)}
                 className="group relative text-left"
               >
-                <div className="relative aspect-3/4 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/25 group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40">
+                <div className="relative aspect-3/4 overflow-hidden rounded-xl sm:rounded-2xl bg-white/5 ring-1 ring-white/8 transition-all group-hover:ring-white/25 sm:group-hover:-translate-y-1 group-hover:shadow-lg group-hover:shadow-black/40">
                   {coverUrl ? (
                     <Image
                       src={coverUrl}
                       alt={g.title}
                       fill
                       className="object-cover"
-                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
+                      sizes="(max-width: 640px) 33vw, (max-width: 768px) 33vw, 20vw"
                     />
                   ) : (
                     <div className="size-full bg-white/5" />
                   )}
-                  <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 via-black/30 to-transparent p-3 pt-10">
-                    <p className="text-xs font-semibold leading-tight line-clamp-2">
+                  <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/40 to-transparent p-2 sm:p-3 pt-8 sm:pt-10">
+                    <p className="text-[10px] sm:text-xs font-semibold leading-tight line-clamp-2">
                       {g.title}
                     </p>
                     {cat && (
-                      <p className={`text-[10px] mt-0.5 ${cat.color}`}>
+                      <p
+                        className={`hidden text-[10px] mt-0.5 sm:block ${cat.color}`}
+                      >
                         {cat.label}
                       </p>
                     )}

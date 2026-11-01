@@ -46,58 +46,58 @@ export default async function DashboardPage() {
     popularGames,
     playingGames,
   ] = await Promise.all([
-      db
-        .select({
-          category: userGame.category,
-          count: count(),
-        })
-        .from(userGame)
-        .where(eq(userGame.userId, userId))
-        .groupBy(userGame.category),
-      db
-        .select()
-        .from(game)
-        .where(
-          and(
-            eq(game.isFeaturedAnticipated, true),
-            gt(game.releaseDate, todayStr)
-          )
+    db
+      .select({
+        category: userGame.category,
+        count: count(),
+      })
+      .from(userGame)
+      .where(eq(userGame.userId, userId))
+      .groupBy(userGame.category),
+    db
+      .select()
+      .from(game)
+      .where(
+        and(
+          eq(game.isFeaturedAnticipated, true),
+          gt(game.releaseDate, todayStr)
         )
-        .orderBy(desc(game.popularity))
-        .limit(5),
-      db
-        .select()
-        .from(game)
-        .where(eq(game.isFeaturedReleased, true))
-        .orderBy(desc(game.popularity))
-        .limit(5),
-      db.query.user.findFirst({
-        where: eq(user.id, userId),
-        columns: { username: true },
-      }),
-      db
-        .select({
-          igdbId: game.igdbId,
-          title: game.title,
-          coverImageId: game.coverImageId,
-          genres: game.genres,
-        })
-        .from(game)
-        .orderBy(desc(game.popularity))
-        .limit(10),
-      db
-        .select({
-          igdbId: game.igdbId,
-          title: game.title,
-          coverImageId: game.coverImageId,
-          genres: game.genres,
-        })
-        .from(userGame)
-        .innerJoin(game, eq(userGame.gameId, game.id))
-        .where(and(eq(userGame.userId, userId), eq(userGame.category, "playing")))
-        .orderBy(desc(userGame.updatedAt))
-        .limit(12),
-    ]);
+      )
+      .orderBy(desc(game.popularity))
+      .limit(5),
+    db
+      .select()
+      .from(game)
+      .where(eq(game.isFeaturedReleased, true))
+      .orderBy(desc(game.popularity))
+      .limit(5),
+    db.query.user.findFirst({
+      where: eq(user.id, userId),
+      columns: { username: true },
+    }),
+    db
+      .select({
+        igdbId: game.igdbId,
+        title: game.title,
+        coverImageId: game.coverImageId,
+        genres: game.genres,
+      })
+      .from(game)
+      .orderBy(desc(game.popularity))
+      .limit(10),
+    db
+      .select({
+        igdbId: game.igdbId,
+        title: game.title,
+        coverImageId: game.coverImageId,
+        genres: game.genres,
+      })
+      .from(userGame)
+      .innerJoin(game, eq(userGame.gameId, game.id))
+      .where(and(eq(userGame.userId, userId), eq(userGame.category, "playing")))
+      .orderBy(desc(userGame.updatedAt))
+      .limit(12),
+  ]);
 
   const username = dbUser?.username;
 
@@ -109,10 +109,10 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div className="space-y-7 sm:space-y-8">
+      <div className="flex items-start justify-between gap-4 sm:items-end">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">
+          <h1 className="text-xl sm:text-3xl font-bold">
             {totalGames > 0 ? "Welcome back" : "Welcome"}, {session.user.name}
           </h1>
           <p className="text-white/40 text-sm mt-1">Your catalog overview.</p>
@@ -132,7 +132,7 @@ export default async function DashboardPage() {
             Now Playing
             <span className="text-white/30 ml-2">({playingGames.length})</span>
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
             {playingGames.map((g) => (
               <GameCard
                 key={g.igdbId}
@@ -151,7 +151,7 @@ export default async function DashboardPage() {
           <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">
             Most Anticipated
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
             {hypeGames.map((g) => (
               <GameCard
                 key={g.igdbId}
@@ -178,7 +178,7 @@ export default async function DashboardPage() {
           <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wider mb-4">
             Recently Released
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
             {recentGames.map((g) => (
               <GameCard
                 key={g.igdbId}

@@ -107,7 +107,7 @@ export default async function ExplorePage() {
     <div className="min-h-screen bg-[#09090d] text-white">
       <PublicNav />
 
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Explore</h1>
           <p className="text-white/40 text-sm mt-1">
@@ -162,7 +162,7 @@ export default async function ExplorePage() {
                       </p>
                     )}
                     {covers.length > 0 && (
-                      <div className="grid grid-cols-6 gap-1.5 px-3.5 pb-3.5">
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 px-3.5 pb-3.5 [&>*:nth-child(n+5)]:hidden sm:[&>*:nth-child(n+5)]:block">
                         {covers.map((c, i) => {
                           const url = igdbCover(c, "t_cover_big");
                           return (
@@ -202,7 +202,7 @@ export default async function ExplorePage() {
               </h2>
               <div className="flex-1 h-px bg-white/8" />
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
               {discoverGames.map((g) => (
                 <GameCard
                   key={g.igdbId}

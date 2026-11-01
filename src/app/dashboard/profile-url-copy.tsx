@@ -19,7 +19,7 @@ export function ProfileUrlCopy({ username }: { username: string }) {
   return (
     <button
       onClick={copy}
-      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/5 border border-white/8 text-xs text-white/40 hover:text-white/70 hover:border-white/15 transition-all"
+      className="inline-flex size-11 shrink-0 items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/5 text-xs text-white/50 transition-all hover:border-white/15 hover:text-white/70 sm:h-auto sm:w-auto sm:px-3.5 sm:py-2"
     >
       {copied ? (
         <>
@@ -36,7 +36,8 @@ export function ProfileUrlCopy({ username }: { username: string }) {
               d="M5 13l4 4L19 7"
             />
           </svg>
-          Copied!
+          <span className="hidden sm:inline">Copied!</span>
+          <span className="sr-only sm:hidden">Profile link copied</span>
         </>
       ) : (
         <>
@@ -53,7 +54,8 @@ export function ProfileUrlCopy({ username }: { username: string }) {
               d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
             />
           </svg>
-          /u/{username}
+          <span className="hidden sm:inline">/u/{username}</span>
+          <span className="sr-only sm:hidden">Copy public profile link</span>
         </>
       )}
     </button>

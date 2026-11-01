@@ -128,14 +128,14 @@ export default async function ProfilePage({
     <div className="min-h-screen bg-[#09090d] text-white flex flex-col">
       <PublicNav />
 
-      <div className="mx-auto max-w-6xl px-6 py-8 w-full flex-1">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8 w-full flex-1">
         <Suspense>
           <ProfileView profile={profileData} isOwner={isOwner} />
         </Suspense>
       </div>
 
       <footer className="border-t border-white/6 mt-auto">
-        <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <span className="text-xs text-white/20">
             NextLevel — Your Gaming Catalog
           </span>

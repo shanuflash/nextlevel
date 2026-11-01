@@ -19,11 +19,11 @@ export function DashboardShell({
   return (
     <div className="min-h-screen bg-[#09090d] text-white flex flex-col">
       <AuthNav user={user} />
-      <main className="mx-auto max-w-6xl px-6 py-8 w-full flex-1">
+      <main className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8 w-full flex-1">
         {children}
       </main>
       <footer className="border-t border-white/6 mt-auto">
-        <div className="mx-auto max-w-6xl px-6 py-6 flex items-center justify-between">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <div className="flex items-center gap-4">
             <span className="text-xs text-white/20">
               NextLevel — Your Gaming Catalog

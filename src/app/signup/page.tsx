@@ -150,7 +150,7 @@ export default function SignupPage() {
   if (session) return null;
 
   return (
-    <div className="min-h-screen bg-[#09090d] text-white flex items-center justify-center px-6">
+    <div className="min-h-screen bg-[#09090d] text-white flex items-center justify-center px-4 sm:px-6 py-8">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold">
@@ -161,7 +161,7 @@ export default function SignupPage() {
           </p>
         </div>
 
-        <div className="bg-white/3 rounded-3xl border border-white/8 p-8 space-y-6">
+        <div className="bg-white/3 rounded-2xl sm:rounded-3xl border border-white/8 p-5 sm:p-8 space-y-6">
           <div className="text-center">
             <h2 className="text-xl font-bold">Create your account</h2>
             <p className="text-white/40 text-sm mt-1">

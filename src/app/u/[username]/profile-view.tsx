@@ -119,12 +119,12 @@ function GameModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:px-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-surface-elevated border border-white/10 rounded-2xl w-full max-w-md overflow-hidden">
+      <div className="bg-surface-elevated border border-white/10 rounded-t-3xl sm:rounded-2xl w-full max-w-md max-h-[92dvh] overflow-y-auto">
         {/* Cover image header */}
         <div className="relative aspect-video overflow-hidden bg-white/5">
           {coverUrl ? (
@@ -147,7 +147,7 @@ function GameModal({
           </button>
         </div>
 
-        <div className="p-6 -mt-8 relative space-y-4">
+        <div className="p-5 sm:p-6 -mt-6 sm:-mt-8 relative space-y-4">
           {/* Title & meta */}
           <div>
             <h2 className="text-xl font-bold leading-tight">{game.title}</h2>
@@ -263,8 +263,8 @@ function ProfileHeader({
   return (
     <div className="mb-6 space-y-4">
       {/* Identity + headline stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        <div className="col-span-2 flex items-center gap-4 sm:gap-5 rounded-3xl border border-white/8 bg-white/3 p-5 sm:p-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="col-span-2 flex items-center gap-4 sm:gap-5 rounded-2xl sm:rounded-3xl border border-white/8 bg-white/3 p-4 sm:p-6">
           <Avatar
             name={profile.displayName}
             image={profile.avatarUrl}
@@ -283,14 +283,14 @@ function ProfileHeader({
             )}
           </div>
         </div>
-        <div className="relative overflow-hidden rounded-3xl border border-white/8 bg-white/3 p-5 sm:p-6 flex flex-col justify-center">
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-white/8 bg-white/3 p-4 sm:p-6 flex flex-col justify-center">
           <div className="text-3xl font-bold tabular-nums text-primary leading-none">
             {profile.totalGames}
           </div>
           <div className="text-xs text-white/40 mt-2">Total Games</div>
           <div className="absolute inset-x-0 bottom-0 h-0.75 bg-primary" />
         </div>
-        <div className="relative overflow-hidden rounded-3xl border border-white/8 bg-white/3 p-5 sm:p-6 flex flex-col justify-center">
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-white/8 bg-white/3 p-4 sm:p-6 flex flex-col justify-center">
           <div className="text-3xl font-bold tabular-nums text-emerald-400 leading-none">
             {profile.finishedCount}
           </div>
@@ -300,7 +300,7 @@ function ProfileHeader({
       </div>
 
       {/* Secondary category strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
         <div className="rounded-2xl border border-white/8 bg-white/3 px-4 py-4">
           <div className="text-xl sm:text-2xl font-bold tabular-nums text-blue-400">
             {counts["playing"] || 0}
@@ -391,7 +391,7 @@ function useColumnCount() {
       if (w >= 1024) setCols(6);
       else if (w >= 768) setCols(5);
       else if (w >= 640) setCols(4);
-      else setCols(3);
+      else setCols(2);
     }
     update();
     window.addEventListener("resize", update);
@@ -418,9 +418,12 @@ function MasonryGrid({
   }, [games, colCount]);
 
   return (
-    <div className="flex gap-3 sm:gap-4">
+    <div className="flex gap-2.5 sm:gap-4">
       {columns.map((col, colIdx) => (
-        <div key={colIdx} className="flex-1 flex flex-col gap-3 sm:gap-4 min-w-0">
+        <div
+          key={colIdx}
+          className="flex-1 flex flex-col gap-2.5 sm:gap-4 min-w-0"
+        >
           {col.map((g, i) => {
             const globalIdx = i * colCount + colIdx;
             const aspect = ASPECT_RATIOS[globalIdx % ASPECT_RATIOS.length];
@@ -553,10 +556,10 @@ export function ProfileView({
     <>
       <ProfileHeader profile={profile} counts={counts} />
 
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex gap-2 mb-6 overflow-x-auto -mx-4 px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <button
           onClick={() => setActiveCategory("all")}
-          className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
+          className={`shrink-0 min-h-11 px-4 py-2 rounded-full text-sm font-medium border transition-all ${
             activeCategory === "all"
               ? "bg-white/12 text-white border-white/20"
               : "bg-transparent text-white/40 border-white/8 hover:text-white/60 hover:border-white/15"
@@ -571,7 +574,7 @@ export function ProfileView({
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
+              className={`shrink-0 min-h-11 px-4 py-2 rounded-full text-sm font-medium border transition-all ${
                 isActive
                   ? (CATEGORY_TAB_COLORS[cat.id] ??
                     "bg-white/15 text-white border-white/20")

@@ -9,7 +9,7 @@ export default function GameLoading() {
       {/* Hero */}
       <div className="relative">
         <div className="absolute inset-x-0 top-0 h-105 sm:h-120 bg-white/3" />
-        <div className="relative mx-auto max-w-6xl px-6 pt-28 sm:pt-40">
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-28 sm:pt-40">
           <div className="flex flex-col sm:flex-row gap-6 sm:gap-8">
             <div className="w-40 sm:w-52 flex-none mx-auto sm:mx-0">
               <Skeleton className="aspect-3/4 rounded-2xl ring-1 ring-white/10" />
@@ -33,7 +33,7 @@ export default function GameLoading() {
       </div>
 
       {/* Body */}
-      <div className="mx-auto max-w-6xl px-6 pt-12 pb-16 grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-12 pb-16 grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10">
         <div className="lg:col-span-2 space-y-10">
           <div className="space-y-3">
             <Skeleton className="h-5 w-24 rounded-md" />
