@@ -18,6 +18,7 @@ import {
   type MenuAnchor,
 } from "@/src/components/category-menu";
 import { removeWithUndo } from "@/src/lib/remove-with-undo";
+import { backdropPrefetchProps } from "@/src/lib/backdrop-cache";
 import { toast } from "sonner";
 
 interface GameItem {
@@ -225,6 +226,7 @@ function GameCard({
   return (
     <button
       onClick={() => onSelect(game)}
+      {...backdropPrefetchProps(game.igdbId)}
       aria-label={`${game.title}, ${game.categoryLabel}`}
       className="group relative text-left w-full"
     >

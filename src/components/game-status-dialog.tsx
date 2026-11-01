@@ -6,7 +6,7 @@ import Link from "next/link";
 import { igdbImage } from "@/src/lib/igdb";
 import { CATEGORIES } from "@/src/lib/constants";
 import { CoverImage } from "@/src/components/cover-image";
-import { getGameBackdrop } from "@/src/lib/game-backdrop";
+import { loadBackdrop, peekBackdrop } from "@/src/lib/backdrop-cache";
 
 /**
  * Game detail sheet for a catalog entry. Owners change status with a single
@@ -34,16 +34,19 @@ export function GameStatusDialog({
   children?: React.ReactNode;
 }) {
   // undefined = still looking, null = game has no artwork or screenshots.
-  const [backdrop, setBackdrop] = useState<string | null | undefined>();
+  // Already-seen games (or ones prefetched on hover) render instantly.
+  const [backdrop, setBackdrop] = useState<string | null | undefined>(() =>
+    peekBackdrop(game.igdbId)
+  );
   const blurredCover = igdbImage(game.coverImageId, "t_cover_small");
   const current = CATEGORIES.find((c) => c.id === game.category);
   const canEdit = Boolean(onChangeCategory);
 
   useEffect(() => {
     let cancelled = false;
-    getGameBackdrop(game.igdbId)
-      .then((id) => !cancelled && setBackdrop(id))
-      .catch(() => !cancelled && setBackdrop(null));
+    loadBackdrop(game.igdbId).then((id) => {
+      if (!cancelled) setBackdrop(id);
+    });
     return () => {
       cancelled = true;
     };

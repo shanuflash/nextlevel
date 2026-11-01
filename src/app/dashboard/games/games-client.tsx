@@ -12,6 +12,7 @@ import {
 } from "@/src/components/category-menu";
 import { GameStatusDialog } from "@/src/components/game-status-dialog";
 import { removeWithUndo } from "@/src/lib/remove-with-undo";
+import { backdropPrefetchProps } from "@/src/lib/backdrop-cache";
 import { toast } from "sonner";
 import type { UserGameRow } from "@/src/lib/types";
 import { CoverImage } from "@/src/components/cover-image";
@@ -34,6 +35,8 @@ interface Filters {
   genre: string;
   platform: string;
   year: string;
+  /** Only applies to Want to Play: "", "released" or "unreleased". */
+  released: string;
   sort: SortBy;
 }
 
@@ -43,6 +46,7 @@ const DEFAULT_FILTERS: Filters = {
   genre: "",
   platform: "",
   year: "",
+  released: "",
   sort: "newest",
 };
 
@@ -55,8 +59,18 @@ function readFilters(params: URLSearchParams): Filters {
     genre: params.get("genre") ?? "",
     platform: params.get("platform") ?? "",
     year: params.get("year") ?? "",
+    released:
+      status === "want-to-play" &&
+      ["released", "unreleased"].includes(params.get("released") ?? "")
+        ? params.get("released")!
+        : "",
     sort: sort && SORTS.some((s) => s.id === sort) ? sort : "newest",
   };
+}
+
+function isReleased(releaseDate: string | null): boolean {
+  if (!releaseDate) return false;
+  return releaseDate <= new Date().toISOString().split("T")[0];
 }
 
 // Keep filters in the URL so they survive reloads, back/forward and sharing.
@@ -140,11 +154,11 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
   }, []);
 
   function updateFilters(patch: Partial<Filters>) {
-    setFilters((prev) => {
-      const next = { ...prev, ...patch };
-      writeFilters(next);
-      return next;
-    });
+    // Write the URL outside the state updater: updaters run during render,
+    // and replaceState there makes Next's router update mid-render.
+    const next = { ...filters, ...patch };
+    setFilters(next);
+    writeFilters(next);
   }
 
   const existingIgdbIds = new Set(games.map((g) => g.igdbId));
@@ -220,10 +234,18 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
   const narrowed = games.filter(matchesNonStatus);
   const countFor = (status: string) =>
     narrowed.filter((g) => g.category === status).length;
-  const filtered =
+  const inStatus =
     filters.status === "all"
       ? narrowed
       : narrowed.filter((g) => g.category === filters.status);
+  const releasedCount = inStatus.filter((g) =>
+    isReleased(g.releaseDate)
+  ).length;
+  const filtered = !filters.released
+    ? inStatus
+    : inStatus.filter(
+        (g) => isReleased(g.releaseDate) === (filters.released === "released")
+      );
 
   const sorted = [...filtered].sort((a, b) => {
     switch (filters.sort) {
@@ -301,7 +323,9 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
               return (
                 <button
                   key={opt.id}
-                  onClick={() => updateFilters({ status: opt.id })}
+                  onClick={() =>
+                    updateFilters({ status: opt.id, released: "" })
+                  }
                   aria-pressed={isActive}
                   className={`shrink-0 min-h-10 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
                     isActive
@@ -323,7 +347,9 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
             <FilterSelect
               label="Filter by status"
               value={filters.status === "all" ? "" : filters.status}
-              onChange={(v) => updateFilters({ status: v || "all" })}
+              onChange={(v) =>
+                updateFilters({ status: v || "all", released: "" })
+              }
             >
               <option value="">All statuses ({narrowed.length})</option>
               {CATEGORIES.map((cat) => (
@@ -399,6 +425,37 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
             </FilterSelect>
           </div>
         </div>
+
+        {filters.status === "want-to-play" && (
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: "", label: "All", count: inStatus.length },
+              { id: "released", label: "Released", count: releasedCount },
+              {
+                id: "unreleased",
+                label: "Unreleased",
+                count: inStatus.length - releasedCount,
+              },
+            ].map((sub) => {
+              const isActive = filters.released === sub.id;
+              return (
+                <button
+                  key={sub.id || "all"}
+                  onClick={() => updateFilters({ released: sub.id })}
+                  aria-pressed={isActive}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                    isActive
+                      ? "bg-white/12 text-white border-white/20"
+                      : "text-white/40 border-white/8 hover:text-white/60 hover:border-white/15"
+                  }`}
+                >
+                  {sub.label}
+                  <span className="ml-1.5 opacity-60">{sub.count}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {sorted.length === 0 ? (
@@ -408,7 +465,9 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
               ? "No games yet. Add your first game above."
               : hasFilters
                 ? "No games match these filters."
-                : "No games in this category."}
+                : filters.released
+                  ? `No ${filters.released} games in Want to Play.`
+                  : "No games in this category."}
           </p>
         </div>
       ) : (
@@ -429,6 +488,7 @@ export function GamesClient({ games: initialGames }: { games: UserGameRow[] }) {
               >
                 <button
                   onClick={() => setOpenGameId(g.id)}
+                  {...backdropPrefetchProps(g.igdbId)}
                   aria-label={`${g.title}${cat ? `, ${cat.label}` : ""}`}
                   className="block w-full text-left"
                 >

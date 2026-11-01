@@ -162,6 +162,17 @@
     touch-action: manipulation;
   }
 
+  /* Native dropdown lists ignore the page's dark styling on some platforms
+     (Chrome on Windows draws white options), so theme them explicitly. */
+  select {
+    color-scheme: dark;
+  }
+  option,
+  optgroup {
+    background-color: #14141a;
+    color: #fff;
+  }
+
   @media (max-width: 639px) {
     input,
     textarea,
