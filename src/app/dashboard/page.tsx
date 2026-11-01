@@ -2,7 +2,7 @@ import { getSession } from "@/src/lib/session";
 import { db } from "@/src/lib/auth";
 import { game, userGame } from "@/schema/game-schema";
 import { user } from "@/schema/auth-schema";
-import { eq, and, count, desc } from "drizzle-orm";
+import { eq, and, count, desc, gt } from "drizzle-orm";
 import { ProfileUrlCopy } from "./profile-url-copy";
 import { DashboardStats } from "./dashboard-stats";
 import { GameCard } from "@/src/components/game-card";
@@ -35,6 +35,8 @@ export default async function DashboardPage() {
   if (!session) return null;
 
   const userId = session.user.id;
+  // Featured flags refresh weekly; hide anything that has since released.
+  const todayStr = new Date().toISOString().split("T")[0];
 
   const [
     categoryCounts,
@@ -55,7 +57,12 @@ export default async function DashboardPage() {
       db
         .select()
         .from(game)
-        .where(eq(game.isFeaturedAnticipated, true))
+        .where(
+          and(
+            eq(game.isFeaturedAnticipated, true),
+            gt(game.releaseDate, todayStr)
+          )
+        )
         .orderBy(desc(game.popularity))
         .limit(5),
       db
@@ -106,7 +113,7 @@ export default async function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">
-            Welcome back, {session.user.name}
+            {totalGames > 0 ? "Welcome back" : "Welcome"}, {session.user.name}
           </h1>
           <p className="text-white/40 text-sm mt-1">Your catalog overview.</p>
         </div>

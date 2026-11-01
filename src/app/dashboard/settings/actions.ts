@@ -14,7 +14,7 @@ export async function updateProfile(formData: FormData) {
   const name = formData.get("name") as string;
   const rawUsername = (formData.get("username") as string)?.trim();
   const username = rawUsername
-    ? rawUsername.toLowerCase().replace(/[^a-z0-9_-]/g, "")
+    ? rawUsername.toLowerCase().replace(/[^a-z0-9_.]/g, "")
     : "";
   const bio = formData.get("bio") as string;
 
@@ -23,9 +23,9 @@ export async function updateProfile(formData: FormData) {
   if (bio && bio.length > 200)
     throw new Error("Bio must be 200 characters or less");
 
-  if (username && !/^[a-z0-9_-]{3,30}$/.test(username)) {
+  if (username && !/^[a-z0-9_.]{3,30}$/.test(username)) {
     throw new Error(
-      "Username must be 3-30 characters, lowercase letters, numbers, hyphens, or underscores only."
+      "Username must be 3-30 characters, lowercase letters, numbers, underscores, or dots only."
     );
   }
 

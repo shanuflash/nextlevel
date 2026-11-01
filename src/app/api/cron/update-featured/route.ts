@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
       fetch("https://api.igdb.com/v4/games", {
         method: "POST",
         headers,
-        body: `fields ${FIELDS};\nwhere hypes > 0 & first_release_date > ${now} & first_release_date < ${sixMonthsFromNow} & cover != null;\nsort hypes desc;\nlimit 5;`,
+        body: `fields ${FIELDS};\nwhere hypes > 0 & first_release_date > ${now} & first_release_date < ${sixMonthsFromNow} & cover != null;\nsort hypes desc;\nlimit 10;`,
       }),
       fetch("https://api.igdb.com/v4/games", {
         method: "POST",

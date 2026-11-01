@@ -6,8 +6,13 @@ import { user } from "@/schema/auth-schema";
 import { eq } from "drizzle-orm";
 import { DashboardShell } from "./shell";
 
+// A plain string title here would drop the root "%s | NextLevel" template for
+// every dashboard page, so re-declare it.
 export const metadata: Metadata = {
-  title: "Dashboard",
+  title: {
+    default: "Dashboard",
+    template: "%s | NextLevel",
+  },
 };
 
 export default async function DashboardLayout({

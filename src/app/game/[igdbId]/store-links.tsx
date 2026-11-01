@@ -84,12 +84,27 @@ const PRIMARY_KINDS: StoreKind[] = [
   "itch",
 ];
 
+// IGDB can list the same store more than once (e.g. separate iPhone and iPad
+// App Store entries); keep the first link per kind.
+function firstPerKind(links: IGDBStoreLink[]): IGDBStoreLink[] {
+  const seen = new Set<StoreKind>();
+  return links.filter((l) => {
+    if (seen.has(l.kind)) return false;
+    seen.add(l.kind);
+    return true;
+  });
+}
+
 export function StoreLinks({ links }: { links: IGDBStoreLink[] }) {
   if (links.length === 0) return null;
 
-  let primary = links.filter((l) => PRIMARY_KINDS.includes(l.kind));
+  let primary = firstPerKind(
+    links.filter((l) => PRIMARY_KINDS.includes(l.kind))
+  );
   const official = links.find((l) => l.kind === "official");
-  const socials = links.filter((l) => SECONDARY_KINDS.includes(l.kind));
+  const socials = firstPerKind(
+    links.filter((l) => SECONDARY_KINDS.includes(l.kind))
+  );
 
   // Ensure there's always at least one link surfaced (e.g. games with only an
   // IGDB or Wikipedia entry); promote the best available to the primary row.

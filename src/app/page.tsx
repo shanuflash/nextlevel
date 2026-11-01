@@ -19,7 +19,7 @@ export default async function LandingPage() {
     {
       number: "02",
       title: "Add games",
-      description: "Search IGDB, categorize, rate. Or bulk add.",
+      description: "Search IGDB and categorize. Or bulk add.",
     },
     {
       number: "03",
@@ -72,8 +72,8 @@ export default async function LandingPage() {
 
           <ScrollReveal delay={0.25}>
             <p className="text-white/40 text-base sm:text-lg mt-6 max-w-lg mx-auto leading-relaxed">
-              Organize your library into categories, rate every game, and get a
-              public profile you can share anywhere.
+              Organize your library into categories, track what you play, and get
+              a public profile you can share anywhere.
             </p>
           </ScrollReveal>
 

@@ -200,13 +200,13 @@ function ProfileSection({ user }: { user: UserData }) {
             <input
               name="username"
               defaultValue={user.username}
-              pattern="^[a-z0-9_-]{3,30}$"
+              pattern="^[a-z0-9_.]{3,30}$"
               className="flex-1 bg-transparent px-1 py-2.5 text-sm focus:outline-none min-w-0"
               placeholder="yourname"
             />
           </div>
           <p className="text-[11px] text-white/20 mt-1.5">
-            3-30 characters. Lowercase letters, numbers, hyphens, underscores.
+            3-30 characters. Lowercase letters, numbers, underscores, dots.
           </p>
           {user.username && (
             <p className="text-[11px] text-white/30 mt-1">
